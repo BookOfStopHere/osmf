@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<local:TestPlayer 
+	backgroundAlpha="0"
+	backgroundColor="black"
+	xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:local="*">
+
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayList;
+			import mx.collections.IList;
+			
+			import net.digitalprimates.dash.DashPluginInfo;
+			
+			import org.osmf.media.MediaPlayer;
+			import org.osmf.media.PluginInfoResource;
+
+			private static const URL_LIST_BASELINE:String = "http://download.tsi.telecom-paristech.fr/gpac/DASH_CONFORMANCE/TelecomParisTech/isobmf/baseline/segment-list-files/counter-10mn_I25_baseline.mpd";
+			private static const DASH_TS_FILE_LIST:String = "http://download.tsi.telecom-paristech.fr/gpac/DASH_CONFORMANCE/TelecomParisTech/ts/baseline/segment-list-files/counter-10mn_I25_baseline_ts.mpd";
+			private static const HLS_CONVERSION:String = "http://localhost/vod/dash/hls_test.mpd";
+			
+			override protected function createPlayer():MediaPlayer {
+				var p:MediaPlayer = super.createPlayer();
+				
+				p.autoDynamicStreamSwitch = false;
+				
+				return p;
+			}
+			
+			override protected function getVideoSources():IList {
+				var list:ArrayList = new ArrayList();
+
+				list.addItem( new VideoSource( "URL List Baseline", URL_LIST_BASELINE ) );
+				list.addItem( new VideoSource( "MPEG-2 TS DASH", DASH_TS_FILE_LIST ) );
+				list.addItem( new VideoSource( "HLS Conversion", HLS_CONVERSION ) );
+				
+				return list;
+			}
+
+			private var _plugins:Vector.<PluginInfoResource>;
+
+			override protected function get plugins():Vector.<PluginInfoResource> {
+				if ( !_plugins ) {
+					_plugins = new Vector.<PluginInfoResource>();
+					_plugins.push( new PluginInfoResource( new DashPluginInfo() ) );
+				}
+
+				return _plugins;
+			}
+		]]>
+	</fx:Script>
+
+</local:TestPlayer>

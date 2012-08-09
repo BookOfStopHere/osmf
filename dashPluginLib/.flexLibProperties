@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<flexLibProperties includeAllClasses="true" useMultiPlatformConfig="false" version="3">
+  <includeClasses>
+    <classEntry path="net.digitalprimates.dash.DashPluginInfo"/>
+    <classEntry path="net.digitalprimates.dash.loaders.DashLoader"/>
+    <classEntry path="net.digitalprimates.dash.parsers.FullDashParser"/>
+    <classEntry path="net.digitalprimates.dash.builders.BaseDashBuilder"/>
+    <classEntry path="net.digitalprimates.dash.parsers.DashParser"/>
+    <classEntry path="net.digitalprimates.dash.DashManifest"/>
+    <classEntry path="net.digitalprimates.dash.elements.DashElement"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.AdaptationSet"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.Representation"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.Segment"/>
+    <classEntry path="net.digitalprimates.dash.utils.TimeUtil"/>
+    <classEntry path="net.digitalprimates.dash.DashMetadataNamespaces"/>
+    <classEntry path="net.digitalprimates.dash.InternalDashPluginInfo"/>
+    <classEntry path="net.digitalprimates.dash.loaders.DashNetLoader"/>
+    <classEntry path="net.digitalprimates.dash.net.DashStreamingFactory"/>
+    <classEntry path="net.digitalprimates.dash.net.DashFileHandler"/>
+    <classEntry path="net.digitalprimates.dash.net.DashIndexHandler"/>
+    <classEntry path="net.digitalprimates.dash.net.DashStreamingInfo"/>
+    <classEntry path="net.digitalprimates.dash.net.DashStreamingIndexInfo"/>
+  </includeClasses>
+  <includeResources/>
+  <namespaceManifests/>
+</flexLibProperties>
