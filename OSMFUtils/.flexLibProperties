@@ -3,6 +3,7 @@
   <includeClasses>
     <classEntry path="net.digitalprimates.osmf.utils.PluginLoader"/>
     <classEntry path="net.digitalprimates.osmf.utils.events.PluginLoaderEvent"/>
+    <classEntry path="net.digitalprimates.osmf.utils.PlayerController"/>
   </includeClasses>
   <includeResources/>
   <namespaceManifests/>
