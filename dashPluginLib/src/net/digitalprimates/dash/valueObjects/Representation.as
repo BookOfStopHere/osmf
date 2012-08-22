@@ -16,7 +16,7 @@ package net.digitalprimates.dash.valueObjects
 		public var baseURL:String;
 		public var id:String;
 		public var mimeType:String;
-		public var codec:String;
+		public var codecs:Array;
 		public var width:Number;
 		public var height:Number;
 		public var bitrate:Number;

@@ -20,6 +20,11 @@
     <classEntry path="net.digitalprimates.dash.net.DashIndexHandler"/>
     <classEntry path="net.digitalprimates.dash.net.DashStreamingInfo"/>
     <classEntry path="net.digitalprimates.dash.net.DashStreamingIndexInfo"/>
+    <classEntry path="net.digitalprimates.dash.decoders.DefaultDecoderFactory"/>
+    <classEntry path="net.digitalprimates.dash.decoders.IDecoderFactory"/>
+    <classEntry path="net.digitalprimates.dash.decoders.IDecoder"/>
+    <classEntry path="net.digitalprimates.dash.decoders.MP2TDecoder"/>
+    <classEntry path="net.digitalprimates.dash.decoders.MP4Decoder"/>
   </includeClasses>
   <includeResources/>
   <namespaceManifests/>

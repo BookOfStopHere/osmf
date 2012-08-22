@@ -104,7 +104,10 @@ package net.digitalprimates.dash.parsers
 				item.baseURL = (xml.internal_namespace::BaseURL.length() > 0) ? xml.internal_namespace::BaseURL[0].toString() : baseURL;
 				item.id = xml.@id;
 				item.mimeType = xml.@mimeType;
-				item.codec = xml.@codecs;
+				
+				var codecList:String = String(xml.@codecs);
+				item.codecs = codecList.split(",");
+				
 				item.width = Number(xml.@width);
 				item.height = Number(xml.@height);
 				item.bitrate = Number(xml.@bandwidth);

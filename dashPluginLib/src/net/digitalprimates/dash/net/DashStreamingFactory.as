@@ -31,7 +31,7 @@ package net.digitalprimates.dash.net
 		}
 
 		public override function createIndexHandler(resource:MediaResourceBase, fileHandler:HTTPStreamingFileHandlerBase):HTTPStreamingIndexHandlerBase {
-			return new DashIndexHandler();
+			return new DashIndexHandler(fileHandler as DashFileHandler);
 		}
 
 		override public function createIndexInfo(resource:MediaResourceBase):HTTPStreamingIndexInfoBase {
