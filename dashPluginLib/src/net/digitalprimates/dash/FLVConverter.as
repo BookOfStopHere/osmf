@@ -55,75 +55,17 @@ package net.digitalprimates.dash
 			bytes = null;
 		}
 		
-		public function appendBytes(ba:ByteArray):void {
-			if (!ba)
+		public function appendBytes(avcc:ByteArray):void {
+			if (!avcc)
 				return;
 			
 			if (!bytes)
 				bytes = new ByteArray();
 			
-			ba.readBytes(bytes, bytes.length);
+			avcc.readBytes(bytes, bytes.length);
 		}
 		private var boo:uint = 0;
 		public function flush():ByteArray {
-			/*
-			private function SendFLVTag(
-				flvts:uint,
-				type:uint,
-				codec:int,
-				mode:int,
-				bytes:ByteArray,
-				offset:uint,
-				length:uint
-			):void
-			
-			SendFLVTag(
-				flvts,
-				FLVTAG_TYPE_VIDEO,
-				FLVTAG_VIDEO_CODEC_AVC_KEYFRAME,
-				FLVTAG_AVC_MODE_AVCC,
-				avcc,
-				0,
-				avcc.length
-			);
-			*/
-			/*
-			var tag:ByteArray = new ByteArray;
-			var msgLength:uint = length + ((codec >= 0) ? 1 : 0) + ((mode >= 0) ? 1 : 0);
-			var cursor:uint = 0;
-			
-			if(msgLength > 0xffffff)
-				return; // too big for the length field
-			
-			tag.length = FLVTAG_HEADER_LENGTH + msgLength + FLVTAG_PREVIOUS_LENGTH_LENGTH; // header + msgLength + 4-byte back pointer
-			tag[cursor++] = type;
-			tag[cursor++] = (msgLength >> 16) & 0xff;
-			tag[cursor++] = (msgLength >>  8) & 0xff;
-			tag[cursor++] = (msgLength      ) & 0xff;
-			tag[cursor++] = (flvts >> 16) & 0xff;
-			tag[cursor++] = (flvts >>  8) & 0xff;
-			tag[cursor++] = (flvts      ) & 0xff;
-			tag[cursor++] = (flvts >> 24) & 0xff;
-			tag[cursor++] = 0x00;
-			tag[cursor++] = 0x00;
-			tag[cursor++] = 0x00;
-			
-			if(codec >= 0)
-				tag[cursor++] = codec;
-			if(mode >= 0)
-				tag[cursor++] = mode;
-			
-			tag.position = cursor;
-			tag.writeBytes(bytes, offset, length);
-			
-			cursor += length;
-			msgLength += 11; // account for message header in back pointer
-			tag[cursor++] = (msgLength >> 24) & 0xff;
-			tag[cursor++] = (msgLength >> 16) & 0xff;
-			tag[cursor++] = (msgLength >>  8) & 0xff;
-			tag[cursor++] = (msgLength      ) & 0xff;
-			*/
-			
 			// Documentation : http://download.macromedia.com/f4v/video_file_format_spec_v10_1.pdf, page 68
 			
 			// video body
