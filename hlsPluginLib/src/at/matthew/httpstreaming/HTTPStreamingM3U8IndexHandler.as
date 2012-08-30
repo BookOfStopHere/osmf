@@ -28,6 +28,8 @@
 	
 	import flash.net.URLRequest;
 	
+	import mx.utils.StringUtil;
+	
 	import net.digitalprimates.osmf.plugins.hls.HTTPStreamingItemsIndexInfo;
 	import net.digitalprimates.osmf.plugins.hls.HTTPStreamingPlaylist;
 	
@@ -141,8 +143,12 @@
 					(indexContext as HTTPStreamingM3U8IndexRateItem).clearManifest();
 			}
 
-
 			var lines:Array = String(data).split("\n");
+			
+			for (var j:int = 0; j < lines.length; j++)
+			{
+				lines[j] = StringUtil.trim(lines[j]);
+			}
 			
 			if(lines[0] != "#EXTM3U")
 			{

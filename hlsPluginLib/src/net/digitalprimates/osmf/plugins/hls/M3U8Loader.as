@@ -8,6 +8,8 @@ package net.digitalprimates.osmf.plugins.hls
 	import flash.net.URLLoader;
 	import flash.net.URLRequest;
 	
+	import mx.utils.StringUtil;
+	
 	import org.osmf.elements.VideoElement;
 	import org.osmf.elements.proxyClasses.LoadFromDocumentLoadTrait;
 	import org.osmf.events.MediaError;
@@ -98,6 +100,10 @@ package net.digitalprimates.osmf.plugins.hls
 
 			var lines:Array = data.split("\n");
 
+			for (var j:int = 0; j < lines.length; j++) {
+				lines[j] = StringUtil.trim(lines[j]);
+			}
+			
 			if (lines[0] != "#EXTM3U") {
 				throw new Error("Extended M3U files must start with #EXTM3U");
 			}

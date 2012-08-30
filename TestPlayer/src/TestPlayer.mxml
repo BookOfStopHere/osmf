@@ -253,11 +253,7 @@
 	
 	<s:layout>
 		<s:VerticalLayout
-			gap="0"
-			paddingTop="15"
-			paddingBottom="15"
-			paddingLeft="15"
-			paddingRight="15"/>
+			gap="0"/>
 	</s:layout>
 	
 	<s:Group width="100%" height="45">

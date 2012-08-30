@@ -25,7 +25,7 @@
 			override protected function getVideoSources():IList {
 				var list:ArrayList = new ArrayList();
 
-				list.addItem( new VideoSource( "Blueberry Muffins", URL1 ) );
+				list.addItem( new VideoSource( "Blueberry Muffins", "http://ios-i.akamaihd.net/hls/live/205105/nbctest_1/master.m3u8" ) );
 				list.addItem( new VideoSource( "Hillman Curtis", URL2 ) );
 				list.addItem( new VideoSource( "Live", LIVE ) );
 

@@ -13,7 +13,7 @@
 # OS or Editor folders
 .DS_Store
 .cache
-.project
+#.project
 .settings
 .tmproj
 nbproject

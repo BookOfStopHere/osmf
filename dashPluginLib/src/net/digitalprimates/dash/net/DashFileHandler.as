@@ -6,6 +6,7 @@ package net.digitalprimates.dash.net
 	import net.digitalprimates.dash.decoders.DefaultDecoderFactory;
 	import net.digitalprimates.dash.decoders.IDecoder;
 	import net.digitalprimates.dash.decoders.IDecoderFactory;
+	import net.digitalprimates.dash.utils.Log;
 	
 	import org.osmf.net.httpstreaming.HTTPStreamingFileHandlerBase;
 
@@ -37,7 +38,7 @@ package net.digitalprimates.dash.net
 		public var currentMimeType:String;
 
 		public var currentCodecs:Array;
-
+		
 		//----------------------------------------
 		//
 		// Public Methods
@@ -45,22 +46,22 @@ package net.digitalprimates.dash.net
 		//----------------------------------------
 
 		override public function beginProcessFile(seek:Boolean, seekTime:Number):void {
-			trace("beginProcessFile");
 			initializeProcessing();
+			currentDecoder.beginProcessData();
 		}
 
 		override public function get inputBytesNeeded():Number {
-			return 0;
+			return 0; // TODO : Is this OK?
 		}
 
 		override public function processFileSegment(input:IDataInput):ByteArray {
-			trace("processFileSegment", input.bytesAvailable);
-			return processDataByFormat(input);
+			Log.log();
+			return processDataByFormat(input, 0, false);
 		}
 
 		override public function endProcessFile(input:IDataInput):ByteArray {
-			trace("endProcessFile");
-			var rv:ByteArray = processDataByFormat(input);
+			Log.log();
+			var rv:ByteArray = processDataByFormat(input, 0, false);
 
 			finishProcessing();
 
@@ -68,8 +69,8 @@ package net.digitalprimates.dash.net
 		}
 
 		override public function flushFileSegment(input:IDataInput):ByteArray {
-			trace("flushFileSegment");
-			var rv:ByteArray = processDataByFormat(input || new ByteArray());
+			Log.log();
+			var rv:ByteArray = processDataByFormat(input || new ByteArray(), 0, true);
 
 			finishProcessing();
 
@@ -92,11 +93,12 @@ package net.digitalprimates.dash.net
 			currentCodecs = null;
 		}
 
-		private function processDataByFormat(input:IDataInput, limit:Number = 0):ByteArray {
+		private function processDataByFormat(input:IDataInput, limit:Number=0, flush:Boolean=false):ByteArray {
 			if (!currentDecoder)
 				return null;
-
-			return currentDecoder.processData(input, limit);
+			
+			var rv:ByteArray = currentDecoder.processData(input, limit);
+			return rv;
 		}
 
 		//----------------------------------------

@@ -11,6 +11,7 @@
 		<![CDATA[
 			import mx.collections.ArrayList;
 			import mx.collections.IList;
+			import mx.events.FlexEvent;
 			
 			import net.digitalprimates.dash.DashPluginInfo;
 			

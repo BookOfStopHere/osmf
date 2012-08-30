@@ -1,5 +1,6 @@
 package net.digitalprimates.dash.net
 {
+	import net.digitalprimates.dash.utils.Log;
 	import net.digitalprimates.dash.valueObjects.Representation;
 	import net.digitalprimates.dash.valueObjects.Segment;
 	
@@ -79,7 +80,7 @@ package net.digitalprimates.dash.net
 		}
 
 		override public function getFileForTime(time:Number, quality:int):HTTPStreamRequest {
-			trace("getFileForTime |", time);
+			Log.log(time);
 			var info:DashStreamingInfo = streamIndexInfo.streamInfos[quality];
 			var media:Representation = info.media;
 
@@ -105,7 +106,7 @@ package net.digitalprimates.dash.net
 			var media:Representation = info.media;
 
 			currentSegmentIndex++;
-			trace("getNextFile |", currentSegmentIndex);
+			Log.log(currentSegmentIndex);
 
 			if (currentSegmentIndex >= media.segments.length) {
 				return new HTTPStreamRequest(HTTPStreamRequestKind.DONE);
@@ -151,7 +152,7 @@ package net.digitalprimates.dash.net
 				requestURL += segment.media;
 			}
 
-			trace("getRequestForSegment |", requestURL);
+			Log.log(requestURL);
 			return new HTTPStreamRequest(HTTPStreamRequestKind.DOWNLOAD, requestURL);
 		}
 

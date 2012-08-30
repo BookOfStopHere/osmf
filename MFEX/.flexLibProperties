@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<flexLibProperties includeAllClasses="true" useMultiPlatformConfig="false" version="3">
+  <includeClasses>
+    <classEntry path="net.digitalprimates.mfex.Media"/>
+    <classEntry path="net.digitalprimates.mfex.player.views.VideoDisplay"/>
+    <classEntry path="net.digitalprimates.mfex.player.mediators.VideoDisplayMediator"/>
+    <classEntry path="net.digitalprimates.mfex.httpstreaming.IManifestParser"/>
+    <classEntry path="net.digitalprimates.mfex.player.views.VideoPlayer"/>
+    <classEntry path="net.digitalprimates.mfex.player.mediators.VideoPlayerMediator"/>
+    <classEntry path="net.digitalprimates.mfex.contexts.DefaultMediaContext"/>
+    <classEntry path="net.digitalprimates.mfex.utils.URL"/>
+    <classEntry path="net.digitalprimates.mfex.contexts.HLSMediaContext"/>
+    <classEntry path="net.digitalprimates.mfex.contexts.IPlayerContext"/>
+    <classEntry path="net.digitalprimates.mfex.player.PlayerController"/>
+    <classEntry path="net.digitalprimates.mfex.player.IPlayerController"/>
+    <classEntry path="net.digitalprimates.mfex.events.NetStreamEvent"/>
+    <classEntry path="net.digitalprimates.mfex.NetClient"/>
+  </includeClasses>
+  <includeResources/>
+  <namespaceManifests/>
+</flexLibProperties>

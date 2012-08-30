@@ -28,6 +28,10 @@ package net.digitalprimates.dash.decoders
 		//
 		//----------------------------------------
 
+		public function beginProcessData():void {
+			
+		}
+		
 		public function processData(input:IDataInput, limit:Number = 0):ByteArray {
 			// Longtail - JW Player HLS
 			if (input.bytesAvailable > 0) {

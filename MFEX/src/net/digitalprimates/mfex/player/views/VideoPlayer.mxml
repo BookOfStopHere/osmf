@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+	xmlns:s="library://ns.adobe.com/flex/spark"
+	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:views="net.digitalprimates.mfex.player.views.*">
+
+	<fx:Script>
+		<![CDATA[
+			import net.digitalprimates.mfex.player.PlayerController;
+			
+			[Inject]
+			public var controller:PlayerController;
+		]]>
+	</fx:Script>
+
+	<s:layout>
+		<s:VerticalLayout 
+			paddingBottom="15"
+			paddingLeft="15"
+			paddingRight="15"
+			paddingTop="15"
+			gap="0"/>
+	</s:layout>
+
+	<s:Group 
+		width="100%" height="100%">
+
+		<views:VideoDisplay
+			id="wrapper"
+			width="100%" height="100%"/>
+
+		<mx:ProgressBar
+			id="loading"
+			width="175"
+			horizontalCenter="0"
+			verticalCenter="0"
+			indeterminate="true"/>
+
+	</s:Group>
+
+	<s:HGroup 
+		width="100%"
+		verticalAlign="middle"
+		gap="0">
+
+		<s:ToggleButton
+			id="playPause"
+			skinClass="spark.skins.spark.mediaClasses.normal.PlayPauseButtonSkin"/>
+
+		<s:ScrubBar id="scrubber"
+			width="100%"/>
+		<!--
+		changeStart="onScrubberChangeStart(event)"
+		changeEnd="onScrubberChangeEnd(event)"/>
+		-->
+
+		<s:Label color="white"/>
+		<!--text="{formatTime(currentTime)} / {formatTime(duration)}"-->
+
+		<s:Spacer width="5"/>
+
+		<s:MuteButton
+			id="volume"
+			skinClass="spark.skins.spark.mediaClasses.normal.MuteButtonSkin"/>
+
+		<s:ToggleButton
+			id="fullscreen"
+			skinClass="spark.skins.spark.mediaClasses.normal.FullScreenButtonSkin"/>
+
+	</s:HGroup>
+
+</s:Group>

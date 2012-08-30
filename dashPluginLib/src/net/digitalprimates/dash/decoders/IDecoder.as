@@ -10,12 +10,7 @@ package net.digitalprimates.dash.decoders
 	 */
 	public interface IDecoder
 	{
-		//----------------------------------------
-		//
-		// Methods
-		//
-		//----------------------------------------
-		
+		function beginProcessData():void;
 		function processData(input:IDataInput, limit:Number = 0):ByteArray;
 	}
 }

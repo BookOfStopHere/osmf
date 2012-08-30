@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application
+	xmlns:fx="http://ns.adobe.com/mxml/2009" 
+	xmlns:s="library://ns.adobe.com/flex/spark" 
+	xmlns:mx="library://ns.adobe.com/flex/mx" xmlns:views="net.digitalprimates.mfex.player.views.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayList;
+			import mx.collections.IList;
+			
+			import net.digitalprimates.mfex.Media;
+			
+			import spark.events.IndexChangeEvent;
+			
+			// Example Sources
+			
+			public static const SOURCE_TYPES:ArrayList = new ArrayList([
+				"video",
+				"hls",
+				"hds",
+				"dash"
+			]);
+			
+			public static const VIDEO_SOURCES:ArrayList = new ArrayList([
+				{name:"Big Buck Bunny", url:"http://localhost/vod/big_buck_bunny_480p_surround.flv"}
+			]);
+			
+			public static const HLS_SOURCES:ArrayList = new ArrayList([
+				{name:"Blueberry Pies", url:"http://qthttp.akamai.com.edgesuite.net/iphone_demo/Video_Content/martha_stewart/blueberry_pies/all.m3u8"},
+				{name:"Hillman Curtis", url:"http://mediadelivery.adobe.com/adobevideodemo/manifests/hls-hillmancurtis-manifest.m3u8"},
+				{name:"Live", url:"http://iphone.kulabyte.com/kulabyte/livedemo/live.m3u8"}
+			]);
+			
+			public static const HDS_SOURCES:ArrayList = new ArrayList([
+				{name:"Hillman Curtis", url:"http://mediadelivery.adobe.com/adobevideodemo/manifests/http-desktop-hillmancurtis-manifest.f4m"}
+			]);
+			
+			public static const DASH_SOURCES:ArrayList = new ArrayList([
+				{name:"URL List Baseline", url:"http://download.tsi.telecom-paristech.fr/gpac/DASH_CONFORMANCE/TelecomParisTech/isobmf/baseline/segment-list-files/counter-10mn_I25_baseline.mpd"},
+				{name:"TS File List", url:"http://download.tsi.telecom-paristech.fr/gpac/DASH_CONFORMANCE/TelecomParisTech/ts/baseline/segment-list-files/counter-10mn_I25_baseline_ts.mpd"},
+				{name:"HLS Conversion", url:"http://localhost/vod/dash/hls_test.mpd"}
+			]);
+			
+			private function getVideoSources(type:String):IList {
+				switch (type) {
+					case "hls":
+						return HLS_SOURCES;
+					case "hds":
+						return HDS_SOURCES;
+					case "dash":
+						return DASH_SOURCES;
+					case "video":
+					default:
+						return VIDEO_SOURCES;
+				}
+			}
+			
+			private function onVideoSelectorChange(event:IndexChangeEvent):void {
+				var item:Object = event.target.selectedItem;
+				
+				if (!item)
+					return;
+				
+				titleLbl.text = item.name;
+				startStream(item.url);
+			}
+			
+			// MFEX Setup
+			
+			private var media:Media;
+			
+			private function startStream(url:String):void {
+				media = new Media(url, player);
+			}
+			
+			// TODO
+			// 1. Figure out where to build NetConnection and NetStream.
+			//		-Must allow for multiple NetStreams.
+			//		-Should also be place that controls NetStream (ie, appendBytes).
+			// 2. Create NetConnection and connect.
+			// 3. Create NetStream and distribute.
+			// 4. Make autoplay work.
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:VerticalLayout
+			gap="0"
+			paddingTop="15"
+			paddingBottom="15"
+			paddingLeft="15"
+			paddingRight="15"/>
+	</s:layout>
+	
+	<s:Group width="100%" height="45">
+		
+		<s:Label
+			id="titleLbl"
+			color="white"
+			fontSize="20"
+			left="20"/>
+		
+		<s:DropDownList
+			id="typeSelector"
+			width="75"
+			dataProvider="{SOURCE_TYPES}"
+			labelField="name"
+			right="390"
+			requireSelection="true"
+			selectedIndex="0"/>
+		
+		<s:DropDownList
+			id="videoSelector"
+			width="350"
+			dataProvider="{getVideoSources(typeSelector.selectedItem)}"
+			labelField="name"
+			right="20"
+			change="onVideoSelectorChange(event)"/>
+		
+	</s:Group>
+	
+	<views:VideoPlayer
+		id="player"
+		width="100%" height="100%"/>
+	
+</s:Application>

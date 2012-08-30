@@ -24,7 +24,16 @@
     <classEntry path="net.digitalprimates.dash.decoders.IDecoderFactory"/>
     <classEntry path="net.digitalprimates.dash.decoders.IDecoder"/>
     <classEntry path="net.digitalprimates.dash.decoders.MP2TDecoder"/>
-    <classEntry path="net.digitalprimates.dash.decoders.MP4Decoder"/>
+    <classEntry path="net.digitalprimates.dash.decoders.GPACDecoder"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.BoxInfo"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.MoofBox"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.MfhdBox"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.TrafBox"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.TfhdBox"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.TfdtBox"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.TrunBox"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.SidxBox"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.BitStream"/>
   </includeClasses>
   <includeResources/>
   <namespaceManifests/>
