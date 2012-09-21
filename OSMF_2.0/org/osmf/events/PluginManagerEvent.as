@@ -25,7 +25,7 @@ package org.osmf.events
 	
 	import org.osmf.media.MediaResourceBase;
 	
-	[ExcludeClass]
+	
 
 	/**
 	 * @private

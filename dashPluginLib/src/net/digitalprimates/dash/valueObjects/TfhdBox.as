@@ -28,7 +28,7 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 
-		private var _trackID:int = -1;
+		private var _trackID:int = 0;
 
 		public function get trackID():int {
 			return _trackID;
@@ -38,7 +38,7 @@ package net.digitalprimates.dash.valueObjects
 			_trackID = value;
 		}
 
-		private var _baseDataOffset:Number = -1;
+		private var _baseDataOffset:Number = 0;
 
 		public function get baseDataOffset():Number {
 			return _baseDataOffset;
@@ -48,7 +48,7 @@ package net.digitalprimates.dash.valueObjects
 			_baseDataOffset = value;
 		}
 
-		private var _sampleDescIndex:int = -1;
+		private var _sampleDescIndex:int = 0;
 
 		public function get sampleDescIndex():int {
 			return _sampleDescIndex;
@@ -58,7 +58,7 @@ package net.digitalprimates.dash.valueObjects
 			_sampleDescIndex = value;
 		}
 
-		private var _defSampleDuration:int = -1;
+		private var _defSampleDuration:int = 0;
 
 		public function get defSampleDuration():int {
 			return _defSampleDuration;
@@ -68,7 +68,7 @@ package net.digitalprimates.dash.valueObjects
 			_defSampleDuration = value;
 		}
 
-		private var _defSampleSize:int = -1;
+		private var _defSampleSize:int = 0;
 
 		public function get defSampleSize():int {
 			return _defSampleSize;
@@ -78,7 +78,7 @@ package net.digitalprimates.dash.valueObjects
 			_defSampleSize = value;
 		}
 
-		private var _defSampleFlags:int = -1;
+		private var _defSampleFlags:int = 0;
 
 		public function get defSampleFlags():int {
 			return _defSampleFlags;
@@ -95,10 +95,8 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			var childDescriptor:Object = readFullBox(data);
+			readFullBox(bitStream, this);
 
-			subType = childDescriptor.type;
-			flags = childDescriptor.flags;
 			trackID = data.readInt();
 
 			//The rest depends on the flags

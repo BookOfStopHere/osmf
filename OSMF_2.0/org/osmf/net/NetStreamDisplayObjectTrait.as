@@ -28,7 +28,7 @@ package org.osmf.net
 	import org.osmf.media.videoClasses.VideoSurface;
 	import org.osmf.traits.DisplayObjectTrait;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

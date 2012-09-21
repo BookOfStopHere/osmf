@@ -26,7 +26,7 @@ package org.osmf.elements.compositeClasses
 	import org.osmf.media.MediaElement;
 	import org.osmf.traits.MediaTraitBase;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

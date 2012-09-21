@@ -28,7 +28,7 @@ package org.osmf.media.pluginClasses
 	import org.osmf.media.MediaResourceBase;
 	import org.osmf.media.PluginInfo;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

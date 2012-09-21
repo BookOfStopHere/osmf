@@ -21,7 +21,7 @@
  *****************************************************/
 package org.osmf.net.httpstreaming.flv
 {
-	[ExcludeClass]
+	
 	
 	/**
 	 * Enumeration class containing all possible modes that a 

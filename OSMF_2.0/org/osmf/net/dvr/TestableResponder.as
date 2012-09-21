@@ -23,7 +23,7 @@ package org.osmf.net.dvr
 {
 	import flash.net.Responder;
 
-	[ExcludeClass]
+	
 
 	/**
 	 * @private 

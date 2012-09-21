@@ -32,10 +32,8 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			var childDescriptor:Object = readFullBox(data);
+			readFullBox(bitStream, this);
 
-			subType = childDescriptor.type;
-			flags = childDescriptor.flags;
 			sequenceNumber = data.readInt();
 			
 			data.position = 0;

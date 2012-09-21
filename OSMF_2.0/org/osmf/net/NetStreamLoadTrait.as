@@ -45,7 +45,7 @@ package org.osmf.net
 		import org.osmf.logging.Logger;
 	}
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

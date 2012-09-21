@@ -27,7 +27,7 @@ package org.osmf.net
 	
 	import org.osmf.utils.URL;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

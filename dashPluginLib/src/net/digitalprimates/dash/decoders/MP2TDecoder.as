@@ -8,7 +8,8 @@ package net.digitalprimates.dash.decoders
 	import flash.utils.IDataInput;
 
 	/**
-	 *
+	 * Decodes TS files.
+	 * TODO : Doesn't work with Dash yet.
 	 *
 	 * @author Nathan Weber
 	 */

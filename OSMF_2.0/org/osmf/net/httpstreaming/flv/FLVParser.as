@@ -25,7 +25,7 @@ package org.osmf.net.httpstreaming.flv
 	import flash.utils.IDataInput;
 	import flash.utils.IDataOutput;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

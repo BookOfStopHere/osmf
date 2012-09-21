@@ -26,7 +26,7 @@ package org.osmf.elements.f4mClasses.builders
 	import org.osmf.elements.f4mClasses.utils.F4MUtils;
 	import org.osmf.media.pluginClasses.VersionUtils;
 
-	[ExcludeClass]
+	
 
 	/**
 	 * @private

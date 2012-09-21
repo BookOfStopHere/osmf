@@ -28,7 +28,7 @@ package org.osmf.elements.beaconClasses
 	import org.osmf.traits.PlayState;
 	import org.osmf.traits.PlayTrait;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

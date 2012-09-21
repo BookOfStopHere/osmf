@@ -4,6 +4,7 @@ package net.digitalprimates.dash.loaders
 	import flash.net.NetStream;
 	
 	import net.digitalprimates.dash.DashMetadataNamespaces;
+	import net.digitalprimates.dash.net.DashHTTPNetStream;
 	import net.digitalprimates.dash.net.DashStreamingFactory;
 	
 	import org.osmf.media.MediaResourceBase;
@@ -37,7 +38,7 @@ package net.digitalprimates.dash.loaders
 
 		override protected function createNetStream(connection:NetConnection, resource:URLResource):NetStream {
 			var factory:HTTPStreamingFactory = new DashStreamingFactory();
-			var httpNetStream:HTTPNetStream = new HTTPNetStream(connection, factory, resource);
+			var httpNetStream:HTTPNetStream = new DashHTTPNetStream(connection, factory, resource);
 
 			return httpNetStream;
 		}

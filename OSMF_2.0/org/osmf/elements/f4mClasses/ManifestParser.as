@@ -53,7 +53,7 @@ package org.osmf.elements.f4mClasses
 		import org.osmf.logging.Logger;
 	}
 
-	[ExcludeClass]
+	
 
 	[Event(name="parseComplete", type="org.osmf.events.ParseEvent")]
 	[Event(name="parseError", type="org.osmf.events.ParseEvent")]

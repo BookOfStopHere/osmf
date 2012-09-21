@@ -33,7 +33,7 @@ package org.osmf.net.httpstreaming.f4f
 		import org.osmf.logging.Log;
 	}
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

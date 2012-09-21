@@ -27,7 +27,7 @@ package org.osmf.events
 	import org.osmf.net.httpstreaming.flv.FLVTagScriptDataObject;
 	import org.osmf.net.httpstreaming.flv.FLVTagScriptDataMode;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

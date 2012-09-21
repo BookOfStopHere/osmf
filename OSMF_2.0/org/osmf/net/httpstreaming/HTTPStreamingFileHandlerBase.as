@@ -68,7 +68,7 @@ package org.osmf.net.httpstreaming
 	 */
 	[Event(name="notifyTimeBias", type="org.osmf.events.HTTPStreamingFileHandlerEvent")]
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

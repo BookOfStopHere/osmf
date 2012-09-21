@@ -96,7 +96,7 @@ package org.osmf.net.httpstreaming
 	 */
 	[Event(name="DVRStreamInfo", type="org.osmf.events.DVRStreamInfoEvent")]
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

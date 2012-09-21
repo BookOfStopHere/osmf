@@ -27,7 +27,7 @@ package org.osmf.elements.f4mClasses
 	import org.osmf.utils.OSMFStrings;
 	import org.osmf.utils.URL;
 
-	[ExcludeClass]
+	
 
 	[Event(name="parseComplete", type="org.osmf.events.ParseEvent")]
 	[Event(name="parseError", type="org.osmf.events.ParseEvent")]

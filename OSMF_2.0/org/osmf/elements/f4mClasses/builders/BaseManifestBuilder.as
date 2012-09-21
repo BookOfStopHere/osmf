@@ -23,7 +23,7 @@ package org.osmf.elements.f4mClasses.builders
 {
 	import org.osmf.elements.f4mClasses.ManifestParser;
 
-	[ExcludeClass]
+	
 
 	/**
 	 * @private

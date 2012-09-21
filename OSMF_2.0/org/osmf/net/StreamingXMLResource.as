@@ -24,7 +24,7 @@ package org.osmf.net
 {
 	import org.osmf.media.MediaResourceBase;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

@@ -26,7 +26,7 @@ package org.osmf.metadata
 	import org.osmf.events.MetadataEvent;
 	import org.osmf.utils.OSMFStrings;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

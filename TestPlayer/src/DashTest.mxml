@@ -9,6 +9,8 @@
 
 	<fx:Script>
 		<![CDATA[
+			import flash.utils.setTimeout;
+			
 			import mx.collections.ArrayList;
 			import mx.collections.IList;
 			import mx.events.FlexEvent;
@@ -17,25 +19,17 @@
 			
 			import org.osmf.media.MediaPlayer;
 			import org.osmf.media.PluginInfoResource;
-
-			private static const URL_LIST_BASELINE:String = "http://download.tsi.telecom-paristech.fr/gpac/DASH_CONFORMANCE/TelecomParisTech/isobmf/baseline/segment-list-files/counter-10mn_I25_baseline.mpd";
-			private static const DASH_TS_FILE_LIST:String = "http://download.tsi.telecom-paristech.fr/gpac/DASH_CONFORMANCE/TelecomParisTech/ts/baseline/segment-list-files/counter-10mn_I25_baseline_ts.mpd";
-			private static const HLS_CONVERSION:String = "http://localhost/vod/dash/hls_test.mpd";
 			
-			override protected function createPlayer():MediaPlayer {
-				var p:MediaPlayer = super.createPlayer();
-				
-				p.autoDynamicStreamSwitch = false;
-				
-				return p;
-			}
+			private static const ADOBE:String = "http://dash.edgesuite.net/adobe/bbb/bbb.mpd";
+			private static const MAIN_PROFILE:String = "http://download.tsi.telecom-paristech.fr/gpac/DASH_CONFORMANCE/TelecomParisTech/mp4-main-multi/mp4-main-multi-mpd-AV-NBS.mpd";
+			private static const LIVE_PROFILE:String = "http://download.tsi.telecom-paristech.fr/gpac/DASH_CONFORMANCE/TelecomParisTech/mp4-live/mp4-live-mpd-AV-NBS.mpd";
 			
 			override protected function getVideoSources():IList {
 				var list:ArrayList = new ArrayList();
 
-				list.addItem( new VideoSource( "URL List Baseline", URL_LIST_BASELINE ) );
-				list.addItem( new VideoSource( "MPEG-2 TS DASH", DASH_TS_FILE_LIST ) );
-				list.addItem( new VideoSource( "HLS Conversion", HLS_CONVERSION ) );
+				list.addItem( new VideoSource( "Adobe", ADOBE ) );
+				list.addItem( new VideoSource( "Main", MAIN_PROFILE ) );
+				list.addItem( new VideoSource( "Live", LIVE_PROFILE ) );
 				
 				return list;
 			}

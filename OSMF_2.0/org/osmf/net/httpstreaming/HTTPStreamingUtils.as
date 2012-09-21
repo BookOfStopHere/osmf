@@ -37,7 +37,7 @@ package org.osmf.net.httpstreaming
 	import org.osmf.net.httpstreaming.f4f.HTTPStreamingF4FStreamInfo;
 	import org.osmf.utils.URL;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

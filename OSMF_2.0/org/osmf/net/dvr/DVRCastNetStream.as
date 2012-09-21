@@ -28,7 +28,7 @@ package org.osmf.net.dvr
 	import org.osmf.metadata.Metadata;
 	import org.osmf.metadata.MetadataNamespaces;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

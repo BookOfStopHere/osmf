@@ -8,7 +8,7 @@ package net.digitalprimates.dash
 	import org.osmf.media.PluginInfo;
 	
 	/**
-	 * 
+	 * Used internal to the Dash plugin to load <code>DashHTTPNetStream</code> and associated classes.
 	 * 
 	 * @author Nathan Weber
 	 */
@@ -28,7 +28,7 @@ package net.digitalprimates.dash
 		//
 		//----------------------------------------
 		
-		protected function getMediaElement():MediaElement {
+		private function getMediaElement():MediaElement {
 			return new VideoElement( null, loader );
 		}
 		
@@ -38,6 +38,12 @@ package net.digitalprimates.dash
 		//
 		//----------------------------------------
 		
+		/**
+		 * Constructor.
+		 *  
+		 * @param mediaFactoryItems
+		 * @param mediaElementCreationNotificationFunction
+		 */		
 		public function InternalDashPluginInfo( mediaFactoryItems:Vector.<MediaFactoryItem>=null,
 												mediaElementCreationNotificationFunction:Function=null ) {
 			if ( !mediaFactoryItems ) {

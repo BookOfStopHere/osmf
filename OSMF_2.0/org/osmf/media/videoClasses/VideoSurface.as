@@ -1,6 +1,6 @@
 package org.osmf.media.videoClasses
 {	
-	[ExcludeClass]
+	
 	
 	import flash.display.DisplayObject;
 	import flash.display.Shape;

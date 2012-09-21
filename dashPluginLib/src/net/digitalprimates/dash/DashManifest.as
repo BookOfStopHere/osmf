@@ -2,10 +2,8 @@ package net.digitalprimates.dash
 {
 	import net.digitalprimates.dash.valueObjects.AdaptationSet;
 
-	[Event(name="parseComplete", type="org.osmf.events.ParseEvent")]
-	[Event(name="parseError", type="org.osmf.events.ParseEvent")]
 	/**
-	 * 
+	 * The ActionScript representation of a Dash MPD manifest file.
 	 * 
 	 * @author Nathan Weber
 	 */
@@ -21,19 +19,15 @@ package net.digitalprimates.dash
 		 * "Live" or "Recorded" 
 		 */		
 		public var streamType:String;
-		
-		/**
-		 * In seconds. 
-		 */		
 		public var minBufferTime:Number;
-		
-		/**
-		 * In seconds. 
-		 */		
 		public var duration:Number;
-		
 		public var baseURL:String;
 		
-		public var adaptation:Vector.<AdaptationSet>;
+		/**
+		 * The set of representations of the stream. 
+		 * <p>For simple streams there will only be one of these.  More complex streams, such
+		 * as when the audio and video tracks are seperate, will have more adaptation sets.</p>
+		 */		
+		public var adaptations:Vector.<AdaptationSet>;
 	}
 }

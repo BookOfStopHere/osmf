@@ -39,7 +39,7 @@ package org.osmf.elements.compositeClasses
 	import org.osmf.logging.Logger;
 	}
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * Event fired when a child was added to the composite. 

@@ -31,7 +31,7 @@ package org.osmf.elements.audioClasses
 	import org.osmf.traits.LoadTrait;
 	import org.osmf.traits.LoaderBase;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

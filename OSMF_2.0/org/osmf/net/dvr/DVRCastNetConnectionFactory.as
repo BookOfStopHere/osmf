@@ -38,7 +38,7 @@ package org.osmf.net.dvr
 	import org.osmf.net.NetStreamUtils;
 	import org.osmf.net.StreamingURLResource;
 
-	[ExcludeClass]
+	
 
 	/**
 	 * @private

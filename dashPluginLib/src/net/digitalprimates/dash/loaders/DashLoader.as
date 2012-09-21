@@ -11,7 +11,9 @@ package net.digitalprimates.dash.loaders
 	import net.digitalprimates.dash.DashMetadataNamespaces;
 	import net.digitalprimates.dash.InternalDashPluginInfo;
 	import net.digitalprimates.dash.builders.BaseDashBuilder;
-	import net.digitalprimates.dash.parsers.DashParser;
+	import net.digitalprimates.dash.builders.IDashBuilder;
+	import net.digitalprimates.dash.parsers.IParser;
+	import net.digitalprimates.dash.utils.Log;
 	import net.digitalprimates.dash.valueObjects.AdaptationSet;
 	import net.digitalprimates.dash.valueObjects.Representation;
 	import net.digitalprimates.osmf.utils.PluginLoader;
@@ -31,14 +33,17 @@ package net.digitalprimates.dash.loaders
 	import org.osmf.metadata.MetadataNamespaces;
 	import org.osmf.net.DynamicStreamingItem;
 	import org.osmf.net.DynamicStreamingResource;
-	import org.osmf.net.StreamType;
+	import org.osmf.net.StreamingItem;
+	import org.osmf.net.StreamingItemType;
 	import org.osmf.traits.LoadState;
 	import org.osmf.traits.LoadTrait;
 	import org.osmf.traits.LoaderBase;
 	import org.osmf.utils.URL;
 
 	/**
-	 *
+	 * Handles the initial loading of the Dash manifest file.
+	 * <p>This class loads the manifest and builds the <code>DynamicStreamingResource</code>
+	 * used to represent the actual video stream.</code>
 	 *
 	 * @author Nathan Weber
 	 */
@@ -60,14 +65,19 @@ package net.digitalprimates.dash.loaders
 
 		private var manifestLoader:URLLoader;
 
-		private var builders:Vector.<BaseDashBuilder>;
+		private var builders:Vector.<IDashBuilder>;
 
-		private var parser:DashParser;
+		private var parser:IParser;
 
 		protected var factory:MediaFactory;
 
 		private var _plugins:Vector.<PluginInfoResource>;
 
+		/**
+		 * The set of plugins used internally. 
+		 * 
+		 * @return 
+		 */		
 		protected function get plugins():Vector.<PluginInfoResource> {
 			if (!_plugins) {
 				_plugins = new Vector.<PluginInfoResource>();
@@ -83,6 +93,9 @@ package net.digitalprimates.dash.loaders
 		//
 		//----------------------------------------
 
+		/**
+		 * @private 
+		 */		
 		override public function canHandleResource(resource:MediaResourceBase):Boolean {
 			if (resource is URLResource) {
 				var url:URL = new URL((resource as URLResource).url);
@@ -100,10 +113,18 @@ package net.digitalprimates.dash.loaders
 		//
 		//----------------------------------------
 
+		/**
+		 * Builds a factory to use when creating the internal MediaElement.
+		 *  
+		 * @return 
+		 */		
 		protected function createDefaultFactory():MediaFactory {
 			return new DefaultMediaFactory();
 		}
 
+		/**
+		 * @private 
+		 */		
 		override protected function executeLoad(loadTrait:LoadTrait):void {
 			this.loadTrait = loadTrait;
 
@@ -116,6 +137,11 @@ package net.digitalprimates.dash.loaders
 			manifestLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onError);
 		}
 
+		/**
+		 * Called when then manifest is done being loaded.
+		 *  
+		 * @param resource
+		 */		
 		protected function finishLoad(resource:MediaResourceBase):void {
 			var loadedElem:MediaElement = factory.createMediaElement(resource);
 
@@ -123,18 +149,24 @@ package net.digitalprimates.dash.loaders
 			updateLoadTrait(loadTrait, LoadState.READY);
 		}
 
-		protected function getBuilders():Vector.<BaseDashBuilder> {
-			var b:Vector.<BaseDashBuilder> = new Vector.<BaseDashBuilder>();
+		/**
+		 * Returns a set of <code>IDashBuilder</code> objects that can be used
+		 * to parse a Dash manifest.
+		 *  
+		 * @return 
+		 */		
+		protected function getBuilders():Vector.<IDashBuilder> {
+			var b:Vector.<IDashBuilder> = new Vector.<IDashBuilder>();
 
 			b.push(new BaseDashBuilder());
 
 			return b;
 		}
 
-		private function getParser(resourceData:String):DashParser {
-			var parser:DashParser;
+		private function getParser(resourceData:String):IParser {
+			var parser:IParser;
 
-			for each (var b:BaseDashBuilder in builders) {
+			for each (var b:IDashBuilder in builders) {
 				if (b.canParse(resourceData)) {
 					parser = b.build(resourceData);
 					break;
@@ -144,37 +176,92 @@ package net.digitalprimates.dash.loaders
 			return parser;
 		}
 
+		/**
+		 * Builds the resource used to represent the actual video stream.
+		 *  
+		 * @param manifest
+		 * @return 
+		 */		
 		protected function makeStreamingResource(manifest:DashManifest):MediaResourceBase {
 			var resource:DynamicStreamingResource = new DynamicStreamingResource((loadTrait.resource as URLResource).url, manifest.streamType);
 			
-			var streamItems:Vector.<DynamicStreamingItem> = new Vector.<DynamicStreamingItem>();
-			
-			// TODO : Only use one adaptation for now...
-			var adaptation:AdaptationSet = manifest.adaptation[0];
+			var primaryStreamItems:Vector.<DynamicStreamingItem> = new Vector.<DynamicStreamingItem>();
+			var alternativeStreamItems:Vector.<StreamingItem> = new Vector.<StreamingItem>();
 			
 			var httpMetadata:Metadata = new Metadata();
 			resource.addMetadataValue(DashMetadataNamespaces.HTTP_STREAMING_METADATA, httpMetadata);
+			httpMetadata.addValue(DashMetadataNamespaces.HTTP_STREAMING_PERIOD_DURATION_KEY, manifest.duration);
 			
-			for each (var media:Representation in adaptation.medias)
-			{
-				var streamName:String = media.id;
-				var streamBitrate:Number = media.bitrate;
-				var streamWidth:int = media.width;
-				var streamHeight:int = media.height;
-				var item:DynamicStreamingItem = new DynamicStreamingItem(streamName, streamBitrate, streamWidth, streamHeight)
-				
-				streamItems.push(item);
-				httpMetadata.addValue(DashMetadataNamespaces.HTTP_STREAMING_REPRESENTATION_KEY + item.streamName, media);
+			var adaptation:AdaptationSet;
+			var media:Representation;
+			
+			var streamName:String;
+			var streamBitrate:Number;
+			var streamWidth:int;
+			var streamHeight:int;
+			
+			var firstAudioStream:Boolean = true;
+			
+			for each (adaptation in manifest.adaptations) {
+				// use the video adaptation set as the variable bitrates OSMF expects
+				if (adaptation.isVideo) {
+					for each (media in adaptation.medias) {
+						streamName = media.id;
+						streamBitrate = media.bitrate / 1000;
+						streamWidth = media.width;
+						streamHeight = media.height;
+						
+						var streamItem:DynamicStreamingItem =
+							new DynamicStreamingItem(streamName,
+													 streamBitrate,
+													 streamWidth,
+													 streamHeight);
+						
+						primaryStreamItems.push(streamItem);
+						httpMetadata.addValue(
+							DashMetadataNamespaces.HTTP_STREAMING_REPRESENTATION_KEY + streamItem.streamName,
+							media);
+					}
+				}
+				// external audio tracks as set as 'alternative audio tracks' in osmf
+				// is Dash the external audio track may be the default
+				// osmf doesn't support that, so it's been 'hacked' in
+				// see DashHTTPNetStream
+				else if (adaptation.isAudio) {
+					for each (media in adaptation.medias) {
+						streamName = media.id;
+						streamBitrate = media.bitrate / 1000;
+						
+						var audioItem:StreamingItem =
+							new StreamingItem(StreamingItemType.AUDIO,
+											  streamName,
+											  streamBitrate);
+						
+						alternativeStreamItems.push(audioItem);
+						httpMetadata.addValue(
+							DashMetadataNamespaces.HTTP_STREAMING_REPRESENTATION_KEY + audioItem.streamName,
+							media);
+						
+						// if this is the first external audio, assume it's also the default audio track
+						// set this metadata so that we can force OSMF into using it later
+						// TODO : This might be a bad assumption!  What if there are external audio tracks and the
+						// video track has audio?  Is that allowed in the Dash spec?
+						if (firstAudioStream) {
+							firstAudioStream = false;
+							httpMetadata.addValue(
+								DashMetadataNamespaces.DEFAULT_AUDIO_TRACK,
+								audioItem.streamName);
+						}
+					}
+				}
+				else {
+					Log.log("unexpected adaptation set");
+				}
 			}
-			resource.streamItems = streamItems;
-
-			// TODO : DVR?
-			/*if (indexLoader.dvrInfo != null)
-			{
-				HTTPStreamingUtils.addDVRInfoMetadataToResource(indexLoader.dvrInfo, resource);
-				resource.addMetadataValue(M2TSStreamingFactory.DVRINFO_HACK_METADATA, indexLoader.dvrInfo); // XXX HACK!
-			}*/
-
+			
+			resource.streamItems = primaryStreamItems;
+			resource.alternativeAudioStreamItems = alternativeStreamItems;
+			
 			// Add metadata to the created resource specifying the resource from
 			// which it was derived.  This allows interested clients to determine
 			// the origins of the resource.
@@ -285,6 +372,11 @@ package net.digitalprimates.dash.loaders
 		//
 		//----------------------------------------
 
+		/**
+		 * Constructor.
+		 * 
+		 * @param factory
+		 */		
 		public function DashLoader(factory:MediaFactory = null) {
 			super();
 

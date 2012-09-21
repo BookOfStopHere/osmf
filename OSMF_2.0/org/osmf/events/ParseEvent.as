@@ -25,7 +25,7 @@ package org.osmf.events
 
 	import org.osmf.elements.f4mClasses.Manifest;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

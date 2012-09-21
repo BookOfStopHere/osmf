@@ -25,7 +25,7 @@ package org.osmf.layout
 	
 	import org.osmf.utils.OSMFStrings;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

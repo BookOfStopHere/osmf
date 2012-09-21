@@ -27,7 +27,7 @@ package org.osmf.media
 	
 	import org.osmf.utils.OSMFStrings;
 	
-	[ExcludeClass]
+	
 
 	/**
 	 * @private

@@ -28,7 +28,7 @@ package org.osmf.media
 	import org.osmf.traits.MediaTraitBase;
 	import org.osmf.utils.OSMFStrings;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

@@ -30,7 +30,7 @@ package org.osmf.net.httpstreaming.dvr
 	import org.osmf.net.httpstreaming.HTTPNetStream;
 	import org.osmf.traits.TimeTrait;
 
-	[ExcludeClass]
+	
 
 	/**
 	 * @private

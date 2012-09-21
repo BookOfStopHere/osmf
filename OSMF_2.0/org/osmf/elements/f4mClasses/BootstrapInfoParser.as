@@ -27,7 +27,7 @@ package org.osmf.elements.f4mClasses
 	import org.osmf.elements.f4mClasses.utils.F4MUtils;
 	import org.osmf.utils.Base64Decoder;
 
-	[ExcludeClass]
+	
 
 	[Event(name="parseComplete", type="org.osmf.events.ParseEvent")]
 	[Event(name="parseError", type="org.osmf.events.ParseEvent")]

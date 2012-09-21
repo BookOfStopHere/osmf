@@ -29,7 +29,7 @@ package org.osmf.elements.compositeClasses
 	import org.osmf.traits.MediaTraitBase;
 	import org.osmf.traits.MediaTraitType;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * Dispatched when an MediaTraitBase is aggregated by the TraitAggregator.

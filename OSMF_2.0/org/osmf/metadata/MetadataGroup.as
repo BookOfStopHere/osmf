@@ -29,7 +29,7 @@ package org.osmf.metadata
 	import org.osmf.events.MetadataEvent;
 	import org.osmf.utils.OSMFStrings;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * Dispatched when the metadata group changes as a result of either

@@ -23,7 +23,7 @@ package org.osmf.elements.proxyClasses
 {
 	import org.osmf.traits.TimeTrait;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

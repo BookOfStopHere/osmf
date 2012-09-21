@@ -29,7 +29,7 @@ package org.osmf.net
 	import org.osmf.traits.BufferTrait;
 	
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

@@ -21,7 +21,7 @@
 *****************************************************/
 package org.osmf.display
 {
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

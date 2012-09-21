@@ -19,6 +19,14 @@ package net.digitalprimates.dash.net
 	{
 		//----------------------------------------
 		//
+		// Constants
+		//
+		//----------------------------------------
+		
+		private static const BOX_READ_LIMIT:Number = 102400 / 2; // half of what hds uses
+		
+		//----------------------------------------
+		//
 		// Variables
 		//
 		//----------------------------------------
@@ -36,7 +44,6 @@ package net.digitalprimates.dash.net
 		protected var currentDecoder:IDecoder;
 
 		public var currentMimeType:String;
-
 		public var currentCodecs:Array;
 		
 		//----------------------------------------
@@ -51,17 +58,18 @@ package net.digitalprimates.dash.net
 		}
 
 		override public function get inputBytesNeeded():Number {
-			return 0; // TODO : Is this OK?
+			return 8; // TODO : How is this used?
+					  // Enough for a type + size from box.
 		}
 
 		override public function processFileSegment(input:IDataInput):ByteArray {
 			Log.log();
-			return processDataByFormat(input, 0, false);
+			return processDataByFormat(input, BOX_READ_LIMIT, false);
 		}
 
 		override public function endProcessFile(input:IDataInput):ByteArray {
 			Log.log();
-			var rv:ByteArray = processDataByFormat(input, 0, false);
+			var rv:ByteArray = processDataByFormat(input, BOX_READ_LIMIT, false);
 
 			finishProcessing();
 
@@ -84,21 +92,20 @@ package net.digitalprimates.dash.net
 		//----------------------------------------
 
 		private function initializeProcessing():void {
-			currentDecoder = decoderFactory.newInstance(currentMimeType, currentCodecs);
+			if (!currentDecoder) {
+				currentDecoder = decoderFactory.newInstance(currentMimeType, currentCodecs);
+			}
 		}
 
 		private function finishProcessing():void {
-			currentDecoder = null;
-			currentMimeType = null;
-			currentCodecs = null;
+			
 		}
 
 		private function processDataByFormat(input:IDataInput, limit:Number=0, flush:Boolean=false):ByteArray {
 			if (!currentDecoder)
 				return null;
 			
-			var rv:ByteArray = currentDecoder.processData(input, limit);
-			return rv;
+			return currentDecoder.processData(input, limit);
 		}
 
 		//----------------------------------------

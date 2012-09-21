@@ -49,7 +49,7 @@ package org.osmf.elements
 	import org.osmf.utils.OSMFStrings;
 	import org.osmf.utils.URL;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

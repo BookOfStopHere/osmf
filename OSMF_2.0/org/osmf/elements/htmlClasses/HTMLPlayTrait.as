@@ -25,7 +25,7 @@ package org.osmf.elements.htmlClasses
 	import org.osmf.traits.PlayState;
 	import org.osmf.traits.PlayTrait;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

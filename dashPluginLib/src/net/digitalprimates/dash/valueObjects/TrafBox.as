@@ -1,52 +1,56 @@
 package net.digitalprimates.dash.valueObjects
 {
 	import flash.utils.ByteArray;
-	
+
 	/**
-	 * 
-	 * 
+	 *
+	 *
 	 * @author Nathan Weber
 	 */
 	public class TrafBox extends BoxInfo
 	{
 		//----------------------------------------
 		//
-		// Constants
-		//
-		//----------------------------------------
-		
-		
-		
-		//----------------------------------------
-		//
-		// Variables
-		//
-		//----------------------------------------
-		
-		
-		
-		//----------------------------------------
-		//
 		// Properties
 		//
 		//----------------------------------------
-		
-		
-		
-		//----------------------------------------
-		//
-		// Public Methods
-		//
-		//----------------------------------------
-		
-		
-		
+
+		private var _tfhd:TfhdBox;
+
+		public function get tfhd():TfhdBox {
+			return _tfhd;
+		}
+
+		public function set tfhd(value:TfhdBox):void {
+			_tfhd = value;
+		}
+
+		private var _tfdt:TfdtBox;
+
+		public function get tfdt():TfdtBox {
+			return _tfdt;
+		}
+
+		public function set tfdt(value:TfdtBox):void {
+			_tfdt = value;
+		}
+
+		private var _trun:TrunBox;
+
+		public function get trun():TrunBox {
+			return _trun;
+		}
+
+		public function set trun(value:TrunBox):void {
+			_trun = value;
+		}
+
 		//----------------------------------------
 		//
 		// Internal Methods
 		//
 		//----------------------------------------
-		
+
 		override protected function parse():void {
 			/*
 			moof			movie fragment
@@ -56,70 +60,46 @@ package net.digitalprimates.dash.valueObjects
 					tfdt	track fragment decode time
 					trun	track fragment run
 			*/
-			
-			childrenBoxes = new Vector.<BoxInfo>();
-			
+
 			var ba:ByteArray;
 			var size:int;
 			var type:String;
 			var boxData:ByteArray;
-			var box:BoxInfo;
-			
+
 			while (data.bytesAvailable > SIZE_AND_TYPE_LENGTH) {
 				ba = new ByteArray();
 				data.readBytes(ba, 0, BoxInfo.SIZE_AND_TYPE_LENGTH);
-				
+
 				size = ba.readUnsignedInt(); // BoxInfo.FIELD_SIZE_LENGTH
 				type = ba.readUTFBytes(BoxInfo.FIELD_TYPE_LENGTH);
-				
+
 				boxData = new ByteArray();
 				data.readBytes(boxData, 0, size - BoxInfo.SIZE_AND_TYPE_LENGTH);
-				
+
 				switch (type) {
 					case BOX_TYPE_TFHD:
-						box = new TfhdBox(size, boxData);
+						tfhd = new TfhdBox(size, boxData);
 						break;
 					case BOX_TYPE_TFDT:
-						box = new TfdtBox(size, boxData);
+						tfdt = new TfdtBox(size, boxData);
 						break;
 					case BOX_TYPE_TRUN:
-						box = new TrunBox(size, boxData);
-						break;
-					default:
-						box = new BoxInfo(size, type, boxData);
+						trun = new TrunBox(size, boxData);
 						break;
 				}
-				
-				childrenBoxes.push(box);
 			}
-			
+
 			// reset
 			data.position = 0;
 		}
-		
-		//----------------------------------------
-		//
-		// Handlers
-		//
-		//----------------------------------------
-		
-		
-		
-		//----------------------------------------
-		//
-		// Lifecycle
-		//
-		//----------------------------------------
-		
-		
-		
+
 		//----------------------------------------
 		//
 		// Constructor
 		//
 		//----------------------------------------
-		
-		public function TrafBox(size:int, data:ByteArray=null) {
+
+		public function TrafBox(size:int, data:ByteArray = null) {
 			super(size, BOX_TYPE_TRAF, data);
 		}
 	}

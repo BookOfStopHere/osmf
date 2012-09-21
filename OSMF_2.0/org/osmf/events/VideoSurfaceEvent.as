@@ -23,7 +23,7 @@ package org.osmf.events
 {
 	import flash.events.Event;
 	
-	[ExcludeClass]
+	
 	/**
 	 * @private
 	 * 

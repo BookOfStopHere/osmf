@@ -38,7 +38,7 @@ package org.osmf.net.dvr
 	import org.osmf.logging.Logger;
 	}
 
-	[ExcludeClass]
+	
 
 	/**
 	 * @private

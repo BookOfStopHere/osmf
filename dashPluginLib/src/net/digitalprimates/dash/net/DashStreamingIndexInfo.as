@@ -17,6 +17,7 @@ package net.digitalprimates.dash.net
 
 		public var url:String;
 		public var streamInfos:Vector.<DashStreamingInfo>;
+		public var duration:Number;
 
 		//----------------------------------------
 		//
@@ -24,9 +25,10 @@ package net.digitalprimates.dash.net
 		//
 		//----------------------------------------
 
-		public function DashStreamingIndexInfo(url:String, streamInfos:Vector.<DashStreamingInfo>) {
+		public function DashStreamingIndexInfo(url:String, streamInfos:Vector.<DashStreamingInfo>, duration:Number) {
 			this.url = url;
 			this.streamInfos = streamInfos;
+			this.duration = duration;
 		}
 	}
 }

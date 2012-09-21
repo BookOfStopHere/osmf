@@ -1,7 +1,7 @@
 package net.digitalprimates.dash.valueObjects
 {
 	/**
-	 * 
+	 * A bitrate rendition.
 	 * 
 	 * @author Nathan Weber
 	 */
@@ -21,15 +21,11 @@ package net.digitalprimates.dash.valueObjects
 		public var height:Number;
 		public var bitrate:Number;
 		
-		/**
-		 * "video" or "audio" 
-		 */		
-		public var contentType:String;
-		
-		public var segmentSourceURL:String;
+		public var initialization:String;
 		public var segmentRangeStart:Number;
 		public var segmentRangeEnd:Number;
 		public var segments:Vector.<Segment>;
+		public var segmentTemplate:SegmentTemplate;
 		
 		public var segmentTimescale:Number;
 		public var segmentDuration:Number;

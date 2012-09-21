@@ -27,7 +27,7 @@ package org.osmf.elements.proxyClasses
 	import org.osmf.traits.LoadTrait;
 	import org.osmf.traits.LoaderBase;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

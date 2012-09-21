@@ -30,7 +30,7 @@ package org.osmf.net
 	import org.osmf.metadata.MetadataNamespaces;
 	}
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

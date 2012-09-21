@@ -15,6 +15,27 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 		
+		public static const BOX_TYPE_FTYP:String = "ftyp";
+		public static const BOX_TYPE_FREE:String = "free";
+		public static const BOX_TYPE_MVHD:String = "mvhd";
+		public static const BOX_TYPE_MVEX:String = "mvex";
+		public static const BOX_TYPE_MEHD:String = "mehd";
+		public static const BOX_TYPE_TREX:String = "trex";
+		public static const BOX_TYPE_TRAK:String = "trak";
+		public static const BOX_TYPE_TKHD:String = "tkhd";
+		public static const BOX_TYPE_MDIA:String = "mdia";
+		public static const BOX_TYPE_MDHD:String = "mdhd";
+		public static const BOX_TYPE_HDLR:String = "hdlr";
+		public static const BOX_TYPE_MINF:String = "minf";
+		public static const BOX_TYPE_VMHD:String = "vmhd";
+		public static const BOX_TYPE_DINF:String = "dinf";
+		public static const BOX_TYPE_DREF:String = "dref";
+		public static const BOX_TYPE_STBL:String = "stbl";
+		public static const BOX_TYPE_STSD:String = "stsd";
+		public static const BOX_TYPE_STTS:String = "stts";
+		public static const BOX_TYPE_STSC:String = "stsc";
+		public static const BOX_TYPE_STSZ:String = "stsz";
+		public static const BOX_TYPE_STCO:String = "stco";
 		public static const BOX_TYPE_STYP:String = "styp";
 		public static const BOX_TYPE_SIDX:String = "sidx";
 		public static const BOX_TYPE_MDAT:String = "mdat";
@@ -24,6 +45,12 @@ package net.digitalprimates.dash.valueObjects
 		public static const BOX_TYPE_TFHD:String = "tfhd";
 		public static const BOX_TYPE_TFDT:String = "tfdt";
 		public static const BOX_TYPE_TRUN:String = "trun";
+		public static const BOX_TYPE_MOOV:String = "moov";
+		public static const BOX_TYPE_MP4A:String = "mp4a";
+		public static const BOX_TYPE_MP4V:String = "mp4v";
+		public static const BOX_TYPE_AVC1:String = "avc1";
+		public static const BOX_TYPE_AVCC:String = "avcC";
+		public static const BOX_TYPE_ESDS:String = "esds";
 		
 		public static const FIELD_SIZE_LENGTH:uint = 4;
 		public static const FIELD_TYPE_LENGTH:uint = 4;
@@ -31,21 +58,17 @@ package net.digitalprimates.dash.valueObjects
 		
 		//----------------------------------------
 		//
-		// Properties
+		// Variables
 		//
 		//----------------------------------------
 		
-		public var childrenBoxes:Vector.<BoxInfo>;
+		protected var bitStream:BitStream;
 		
-		private var _subType:uint;
-		
-		public function get subType():uint {
-			return _subType;
-		}
-		
-		public function set subType(value:uint):void {
-			_subType = value;
-		}
+		//----------------------------------------
+		//
+		// Properties
+		//
+		//----------------------------------------
 		
 		private var _flags:uint;
 		
@@ -78,6 +101,8 @@ package net.digitalprimates.dash.valueObjects
 		public function set data(value:ByteArray):void {
 			_data = value;
 			
+			bitStream = new BitStream(_data);
+			
 			if (_data && _data.bytesAvailable > 0)
 				parse();
 		}
@@ -99,7 +124,6 @@ package net.digitalprimates.dash.valueObjects
 		public function set version(value:int):void {
 			_version = value;
 		}
-
 		
 		//----------------------------------------
 		//
@@ -107,79 +131,13 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 		
-		private function readBoxSize():void {
-			// MUST IMPLEMENT IN SUB-CLASS
-		}
-		
-		internal static function readFullBox(data:ByteArray):Object
+		internal static function readFullBox(bs:BitStream, source:BoxInfo):void
 		{
-			if (data.length < 4)
-				return null;
+			if (bs.data.length < 4)
+				return;
 			
-			var obj:Object = {};
-			obj.type = uint(data.readByte());
-			obj.flags = gf_bs_read_u24(data);
-			return obj;
-		}
-		
-		internal static const bit_mask:Array = [0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1];
-		internal static const bits_mask:Array = [0x0, 0x1, 0x3, 0x7, 0xF, 0x1F, 0x3F, 0x7F];
-		
-		internal static function gf_bs_read_int(bs:BitStream, nBits:uint):uint
-		{
-			var ret:uint;
-			var bit:uint;
-			
-			if (bs.current == BitStream.NO_VALUE) {
-				bs.current = bs.data.readByte();
-			}
-			
-			ret = 0;
-			while (nBits-- > 0) {
-				ret <<= 1;
-				
-				if (bs.nbBits == 8) {
-					bs.current = bs.data.readByte();
-					bs.nbBits = 0;
-				}
-				
-				bit = ((bs.current & bit_mask[bs.nbBits++]) ? 1 : 0);
-				
-				ret |= bit;
-			}
-			
-			return ret;
-		}
-		
-		internal static function gf_bs_read_u24(bs:ByteArray):uint
-		{
-			var ret:uint;
-			ret = bs.readByte();
-			ret<<=8;
-			ret |= bs.readByte();
-			ret<<=8;
-			ret |= bs.readByte();
-			return ret;
-		}
-		
-		internal static function gf_bs_read_u32(bs:ByteArray):uint {
-			var ret:uint = bs.readByte();
-			ret <<= 8;
-			ret |= bs.readByte();
-			ret <<= 8;
-			ret |= bs.readByte();
-			ret <<= 8;
-			ret |= bs.readByte();
-			return ret;
-		}
-		
-		internal static function gf_bs_read_u64(bs:ByteArray):uint
-		{
-			var ret:uint;
-			ret = gf_bs_read_u32(bs);
-			ret<<=32;
-			ret |= gf_bs_read_u32(bs);
-			return ret;
+			source.version = uint(bs.data.readByte());
+			source.flags = BitStream.gf_bs_read_u24(bs);
 		}
 		
 		protected function parse():void {

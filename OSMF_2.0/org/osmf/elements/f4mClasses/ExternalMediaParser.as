@@ -32,7 +32,7 @@ package org.osmf.elements.f4mClasses
 	import org.osmf.net.httpstreaming.HTTPStreamingUtils;
 	import org.osmf.utils.OSMFStrings;
 
-	[ExcludeClass]
+	
 
 	/**
 	 * @private

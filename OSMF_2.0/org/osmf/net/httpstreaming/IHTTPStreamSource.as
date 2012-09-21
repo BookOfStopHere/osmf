@@ -23,7 +23,7 @@ package org.osmf.net.httpstreaming
 {
 	import flash.utils.ByteArray;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

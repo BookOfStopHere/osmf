@@ -8,6 +8,7 @@ package net.digitalprimates.dash.net
 	import org.osmf.metadata.Metadata;
 	import org.osmf.net.DynamicStreamingItem;
 	import org.osmf.net.DynamicStreamingResource;
+	import org.osmf.net.StreamingItem;
 	import org.osmf.net.httpstreaming.HTTPStreamingFactory;
 	import org.osmf.net.httpstreaming.HTTPStreamingFileHandlerBase;
 	import org.osmf.net.httpstreaming.HTTPStreamingIndexHandlerBase;
@@ -38,7 +39,10 @@ package net.digitalprimates.dash.net
 			var streamInfos:Vector.<DashStreamingInfo> = generateStreamInfos(resource);
 			var url:String = (resource as URLResource).url;
 			
-			return new DashStreamingIndexInfo(url, streamInfos);
+			var httpMetadata:Metadata = resource.getMetadataValue(DashMetadataNamespaces.HTTP_STREAMING_METADATA) as Metadata;
+			var duration:Number = httpMetadata.getValue(DashMetadataNamespaces.HTTP_STREAMING_PERIOD_DURATION_KEY);
+			
+			return new DashStreamingIndexInfo(url, streamInfos, duration);
 		}
 
 		//----------------------------------------
@@ -57,8 +61,9 @@ package net.digitalprimates.dash.net
 			var dsResource:DynamicStreamingResource = resource as DynamicStreamingResource;
 
 			if (dsResource != null) {
+				var media:Representation
 				for each (var streamItem:DynamicStreamingItem in dsResource.streamItems) {
-					var media:Representation = httpMetadata.getValue(DashMetadataNamespaces.HTTP_STREAMING_REPRESENTATION_KEY + streamItem.streamName);
+					media = httpMetadata.getValue(DashMetadataNamespaces.HTTP_STREAMING_REPRESENTATION_KEY + streamItem.streamName);
 					streamInfos.push(new DashStreamingInfo(streamItem.streamName, streamItem.bitrate, media));
 				}
 			}

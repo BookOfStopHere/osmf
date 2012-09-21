@@ -20,7 +20,7 @@
 *****************************************************/
 package org.osmf.metadata
 {
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

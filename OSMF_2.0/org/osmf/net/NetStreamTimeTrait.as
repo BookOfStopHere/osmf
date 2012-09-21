@@ -27,7 +27,7 @@ package org.osmf.net
 	import org.osmf.media.MediaResourceBase;
 	import org.osmf.traits.TimeTrait;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

@@ -31,7 +31,7 @@ package org.osmf.net
 	import org.osmf.traits.SeekTrait;
 	import org.osmf.traits.TimeTrait;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

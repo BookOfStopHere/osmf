@@ -23,7 +23,7 @@ package org.osmf.elements.f4mClasses
 {
 	import flash.events.EventDispatcher;
 
-	[ExcludeClass]
+	
 
 	/**
 	 * @private

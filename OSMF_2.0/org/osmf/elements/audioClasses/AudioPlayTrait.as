@@ -27,7 +27,7 @@ package org.osmf.elements.audioClasses
 	import org.osmf.traits.PlayTrait;
 	import org.osmf.traits.PlayState;
 			
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

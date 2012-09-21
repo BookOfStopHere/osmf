@@ -24,7 +24,7 @@ package org.osmf.net.httpstreaming
 	import flash.events.IEventDispatcher;
 	import flash.net.URLRequest;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

@@ -21,7 +21,7 @@
  *****************************************************/
 package org.osmf.net.httpstreaming
 {
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

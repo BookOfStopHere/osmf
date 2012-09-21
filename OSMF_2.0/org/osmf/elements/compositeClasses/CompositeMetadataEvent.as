@@ -27,7 +27,7 @@ package org.osmf.elements.compositeClasses
 	import org.osmf.metadata.MetadataGroup;
 	import org.osmf.metadata.MetadataSynthesizer;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

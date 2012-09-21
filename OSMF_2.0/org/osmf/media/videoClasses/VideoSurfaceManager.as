@@ -1,6 +1,6 @@
 package org.osmf.media.videoClasses
 {
-	[ExcludeClass]
+	
 	
 	import flash.events.Event;
 	import flash.events.VideoEvent;

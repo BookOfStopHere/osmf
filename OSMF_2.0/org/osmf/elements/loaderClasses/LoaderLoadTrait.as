@@ -29,7 +29,7 @@ package org.osmf.elements.loaderClasses
 	import org.osmf.traits.LoadTrait;
 	import org.osmf.traits.LoaderBase;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

@@ -32,7 +32,7 @@ package org.osmf.net.drm
 	import flash.system.SystemUpdater;
 	}
 
-    [ExcludeClass]
+    
     
     /**
 	 * @private

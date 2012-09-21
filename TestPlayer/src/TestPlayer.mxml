@@ -9,6 +9,8 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import flash.utils.setTimeout;
+			
 			import mx.collections.IList;
 			import mx.events.FlexEvent;
 			import mx.events.ResizeEvent;
@@ -73,9 +75,9 @@
 			private var pluginLoader:PluginLoader;
 			private var factory:MediaFactory;
 			private var resource:MediaResourceBase;
-			private var element:MediaElement;
-			private var player:MediaPlayer;
-			private var container:MediaContainer;
+			protected var element:MediaElement;
+			protected var player:MediaPlayer;
+			protected var container:MediaContainer;
 			
 			protected function get plugins():Vector.<PluginInfoResource> {
 				return null;
@@ -117,6 +119,9 @@
 				p.addEventListener(TimeEvent.CURRENT_TIME_CHANGE, onTimeChange);
 				p.addEventListener(TimeEvent.DURATION_CHANGE, onDurationChange);
 				
+				p.autoDynamicStreamSwitch = false;
+				setTimeout(analytics, 1000);
+				
 				return p;
 			}
 			
@@ -156,6 +161,22 @@
 				
 				container.addMediaElement(element);
 			}
+			
+			private function analytics():void {
+				if (player.maxAllowedDynamicStreamIndex > 1) {
+					bitrateDownBtn.enabled = true;
+					bitrateUpBtn.enabled = true;
+					mbrLabel.text = "Bitrates: " + (player.currentDynamicStreamIndex+1) + " / " + (player.maxAllowedDynamicStreamIndex+1);
+				}
+				else {
+					bitrateDownBtn.enabled = false;
+					bitrateUpBtn.enabled = false;
+					mbrLabel.text = "Stream not MBR.";
+				}
+				
+				setTimeout(analytics, 1000);
+			}
+			
 			// HANDLERS /////////////////////////////////////////////////////////////////
 
 			private function onPluginsLoaded( event:PluginLoaderEvent ):void {
@@ -248,74 +269,101 @@
 					event.target.selectedIndex = -1;
 				}
 			}
+			
+			private function onBitrateDownClick(event:Event):void {
+				if (player.currentDynamicStreamIndex > 0) {
+					player.switchDynamicStreamIndex(player.currentDynamicStreamIndex - 1);
+				}
+			}
+			
+			private function onBitrateUpClick(event:Event):void {
+				if (player.currentDynamicStreamIndex < player.maxAllowedDynamicStreamIndex) {
+					player.switchDynamicStreamIndex(player.currentDynamicStreamIndex + 1);
+				}
+			}
 		]]>
 	</fx:Script>
 	
-	<s:layout>
-		<s:VerticalLayout
-			gap="0"/>
-	</s:layout>
-	
-	<s:Group width="100%" height="45">
+	<s:VGroup top="0" left="0" right="0" bottom="0" gap="0">
 		
-		<s:Label
-			id="titleLbl"
-			color="white"
-			fontSize="20"
-			left="20"/>
+		<s:HGroup width="100%" height="45" paddingLeft="20" paddingRight="20">
+			
+			<s:Label
+				id="titleLbl"
+				color="white"
+				fontSize="20"/>
+			
+			<s:Spacer width="100%"/>
+			
+			<s:Label
+				id="mbrLabel"
+				color="white"
+				fontSize="20"/>
+			
+			<s:Button
+				id="bitrateDownBtn"
+				label="Down"
+				click="onBitrateDownClick(event)"/>
+			<s:Button
+				id="bitrateUpBtn"
+				label="Up"
+				click="onBitrateUpClick(event)"/>
+			
+			<s:Spacer width="100%"/>
+			
+			<s:DropDownList
+				id="videoSelector"
+				width="350"
+				dataProvider="{getVideoSources()}"
+				labelField="name"
+				change="onVideoSelectorChange(event)"/>
+			
+		</s:HGroup>
 		
-		<s:DropDownList
-			id="videoSelector"
-			width="350"
-			dataProvider="{getVideoSources()}"
-			labelField="name"
-			right="20"
-			change="onVideoSelectorChange(event)"/>
+		<s:Group width="100%" height="100%">
+			
+			<mx:UIComponent
+				id="wrapper"
+				width="100%" height="100%"
+				resize="onWrapperResize(event)"/>
+			
+			<mx:ProgressBar
+				id="loading"
+				width="175"
+				indeterminate="true"
+				verticalCenter="0"
+				horizontalCenter="0"/>
+			
+		</s:Group>
 		
-	</s:Group>
-	
-	<s:Group width="100%" height="100%">
+		<s:HGroup width="100%" verticalAlign="middle" gap="0">
+			
+			<s:ToggleButton
+				id="playPause"
+				skinClass="spark.skins.spark.mediaClasses.normal.PlayPauseButtonSkin"/>
+			
+			<s:ScrubBar
+				id="scrubber"
+				width="100%"
+				changeStart="onScrubberChangeStart(event)"
+				changeEnd="onScrubberChangeEnd(event)"/>
+			
+			<s:Label
+				text="{formatTime(currentTime)} / {formatTime(duration)}"
+				color="white"/>
+			
+			<s:Spacer width="5"/>
+			
+			<s:MuteButton
+				id="volume"
+				skinClass="spark.skins.spark.mediaClasses.normal.MuteButtonSkin"/>
+			
+			<s:ToggleButton
+				id="fullscreen"
+				skinClass="spark.skins.spark.mediaClasses.normal.FullScreenButtonSkin"/>
+			
+		</s:HGroup>
 		
-		<mx:UIComponent
-			id="wrapper"
-			width="100%" height="100%"
-			resize="onWrapperResize(event)"/>
-		
-		<mx:ProgressBar
-			id="loading"
-			width="175"
-			indeterminate="true"
-			verticalCenter="0"
-			horizontalCenter="0"/>
-		
-	</s:Group>
-	
-	<s:HGroup width="100%" verticalAlign="middle" gap="0">
-		
-		<s:ToggleButton
-			id="playPause"
-			skinClass="spark.skins.spark.mediaClasses.normal.PlayPauseButtonSkin"/>
-		
-		<s:ScrubBar
-			id="scrubber"
-			width="100%"
-			changeStart="onScrubberChangeStart(event)"
-			changeEnd="onScrubberChangeEnd(event)"/>
-		
-		<s:Label
-			text="{formatTime(currentTime)} / {formatTime(duration)}"
-			color="white"/>
-		
-		<s:Spacer width="5"/>
-		
-		<s:MuteButton
-			id="volume"
-			skinClass="spark.skins.spark.mediaClasses.normal.MuteButtonSkin"/>
-		
-		<s:ToggleButton
-			id="fullscreen"
-			skinClass="spark.skins.spark.mediaClasses.normal.FullScreenButtonSkin"/>
-		
-	</s:HGroup>
+	</s:VGroup>
 	
 </s:Application>

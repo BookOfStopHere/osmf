@@ -8,6 +8,7 @@ package net.digitalprimates.dash.parsers
 	import net.digitalprimates.dash.valueObjects.AdaptationSet;
 	import net.digitalprimates.dash.valueObjects.Representation;
 	import net.digitalprimates.dash.valueObjects.Segment;
+	import net.digitalprimates.dash.valueObjects.SegmentTemplate;
 	
 	import org.osmf.events.ParseEvent;
 	import org.osmf.net.StreamType;
@@ -17,7 +18,7 @@ package net.digitalprimates.dash.parsers
 	 *
 	 * @author Nathan Weber
 	 */
-	public class DashParser extends EventDispatcher
+	public class DashParser extends EventDispatcher implements IParser
 	{
 		//----------------------------------------
 		//
@@ -25,7 +26,11 @@ package net.digitalprimates.dash.parsers
 		//
 		//----------------------------------------
 
+		/**
+		 * The manifest object being built by the parser.
+		 */		
 		protected var manifest:DashManifest;
+		
 		private var internal_namespace:Namespace;
 
 		//----------------------------------------
@@ -34,6 +39,9 @@ package net.digitalprimates.dash.parsers
 		//
 		//----------------------------------------
 
+		/**
+		 * @copy net.digitalprimates.dash.parsers.IParser#parse()
+		 */		
 		public function parse(value:String, baseURL:String):void {
 			if (!value || value.length == 0)
 				error();
@@ -52,7 +60,7 @@ package net.digitalprimates.dash.parsers
 				// TODO : Assume only one period for now...
 				var period:XML = xml.internal_namespace::Period[0];
 				var items:XMLList = period..internal_namespace::AdaptationSet;
-				manifest.adaptation = parseAdaptationSets(items, baseURL);
+				manifest.adaptations = parseAdaptationSets(items, baseURL);
 				
 				finishLoad();
 			}
@@ -67,6 +75,13 @@ package net.digitalprimates.dash.parsers
 		//
 		//----------------------------------------
 		
+		/**
+		 * Parses the top level manifest items.
+		 *  
+		 * @param value
+		 * @param baseURL
+		 * @return 
+		 */		
 		protected function parseTopManifest(value:XML, baseURL:String):DashManifest {
 			var man:DashManifest = new DashManifest();
 			
@@ -80,6 +95,13 @@ package net.digitalprimates.dash.parsers
 			return man;
 		}
 		
+		/**
+		 * Parses adaptation sets.
+		 *  
+		 * @param items
+		 * @param baseURL
+		 * @return 
+		 */		
 		protected function parseAdaptationSets(items:XMLList, baseURL:String):Vector.<AdaptationSet> {
 			var sets:Vector.<AdaptationSet> = new Vector.<AdaptationSet>();
 			var item:AdaptationSet;
@@ -87,7 +109,24 @@ package net.digitalprimates.dash.parsers
 			for each (var xml:XML in items) {
 				item = new AdaptationSet();
 				item.baseURL = (xml.internal_namespace::BaseURL.length() > 0) ? xml.internal_namespace::BaseURL[0].toString() : baseURL;
-				item.medias = parseRepresentations(xml..internal_namespace::Representation, item.baseURL);
+				
+				// get contentType from one level in
+				if (xml.internal_namespace::ContentComponent.length() > 0) {
+					item.id = xml.internal_namespace::ContentComponent[0].@id;
+					item.contentType = xml.internal_namespace::ContentComponent[0].@contentType;
+				}
+				
+				if (xml.internal_namespace::SegmentTemplate.length() > 0) {
+					var templateXML:XML = xml.internal_namespace::SegmentTemplate[0];
+					var st:SegmentTemplate = parseSegmentTemplate(templateXML);
+					
+					var initURL:String;
+					// get the initialization to put in each representation
+					if (templateXML.attribute('initialization').length() > 0)
+						initURL = templateXML.@initialization;
+				}
+				
+				item.medias = parseRepresentations(xml..internal_namespace::Representation, item.baseURL, initURL, st);
 				
 				sets.push(item);
 			}
@@ -95,7 +134,16 @@ package net.digitalprimates.dash.parsers
 			return sets;
 		}
 		
-		protected function parseRepresentations(items:XMLList, baseURL:String):Vector.<Representation> {
+		/**
+		 * Parses representations.
+		 *  
+		 * @param items
+		 * @param baseURL
+		 * @param initializationURL
+		 * @param baseSegmentTemplate
+		 * @return 
+		 */		
+		protected function parseRepresentations(items:XMLList, baseURL:String, initializationURL:String, baseSegmentTemplate:SegmentTemplate):Vector.<Representation> {
 			var sets:Vector.<Representation> = new Vector.<Representation>();
 			var item:Representation;
 			
@@ -112,31 +160,45 @@ package net.digitalprimates.dash.parsers
 				item.height = Number(xml.@height);
 				item.bitrate = Number(xml.@bandwidth);
 				
-				// get contentType from one level in
-				if (xml.internal_namespace::ContentComponent.length() > 0) {
-					item.contentType = xml.internal_namespace::ContentComponent[0].@contentType;
-				}
-				
 				var segmentList:XML = xml.internal_namespace::SegmentList[0];
 				
-				if (segmentList.internal_namespace::Initialization.length() > 0) {
-					var initialization:XML = segmentList.internal_namespace::Initialization[0];
-					item.segmentSourceURL = initialization.@sourceURL;
-					
-					var range:Point = parseRangeValues(initialization.@range);
-					if (range) {
-						item.segmentRangeStart = range.x;
-						item.segmentRangeEnd = range.y;
+				if (segmentList) {
+					if (segmentList.internal_namespace::Initialization.length() > 0) {
+						var initialization:XML = segmentList.internal_namespace::Initialization[0];
+						initializationURL = initialization.@sourceURL;
+						
+						var range:Point = parseRangeValues(initialization.@range);
+						if (range) {
+							item.segmentRangeStart = range.x;
+							item.segmentRangeEnd = range.y;
+						}
 					}
+					
+					var timescale:Number = Number(segmentList.@timescale);
+					var duration:Number = Number(segmentList.@duration);
+					
+					item.segmentTimescale = timescale;
+					item.segmentDuration = duration;
+					
+					item.segments = parseSegments(segmentList..internal_namespace::SegmentURL, timescale, duration);
 				}
 				
-				var timescale:Number = Number(segmentList.@timescale);
-				var duration:Number = Number(segmentList.@duration);
+				if (xml.internal_namespace::SegmentTemplate.length() > 0) {
+					var templateXML:XML = xml.internal_namespace::SegmentTemplate[0];
+					item.segmentTemplate = parseSegmentTemplate(templateXML, baseSegmentTemplate);
+					
+					if (templateXML.attribute('initialization').length() > 0)
+						initializationURL = templateXML.@initialization;
+					
+					item.segmentTimescale = item.segmentTemplate.timescale;
+					item.segmentDuration = item.segmentTemplate.duration;
+				}
+				// the template may only be defined in the adpatation set, so pass it down
+				else if (baseSegmentTemplate != null) {
+					item.segmentTemplate = baseSegmentTemplate;
+				}
 				
-				item.segmentTimescale = timescale;
-				item.segmentDuration = duration;
-				
-				item.segments = parseSegments(segmentList..internal_namespace::SegmentURL, timescale, duration);
+				item.initialization = initializationURL;
 				
 				sets.push(item);
 			}
@@ -144,6 +206,14 @@ package net.digitalprimates.dash.parsers
 			return sets;
 		}
 		
+		/**
+		 * Parses segments from a SegmentList.
+		 *  
+		 * @param items
+		 * @param timescale
+		 * @param duration
+		 * @return 
+		 */		
 		protected function parseSegments(items:XMLList, timescale:Number, duration:Number):Vector.<Segment> {
 			var sets:Vector.<Segment> = new Vector.<Segment>();
 			var item:Segment;
@@ -173,6 +243,12 @@ package net.digitalprimates.dash.parsers
 			return sets;
 		}
 		
+		/**
+		 * Parses range values (100-200) from a node.
+		 *  
+		 * @param value
+		 * @return 
+		 */		
 		protected function parseRangeValues(value:String):Point {
 			var point:Point;
 			
@@ -185,10 +261,44 @@ package net.digitalprimates.dash.parsers
 			return point;
 		}
 		
+		/**
+		 * Parses a SegmentTemplate node.
+		 *  
+		 * @param xml
+		 * @param base The template from a parent node.
+		 * @return 
+		 */		
+		protected function parseSegmentTemplate(xml:XML, base:SegmentTemplate=null):SegmentTemplate {
+			if (!xml)
+				return null;
+			
+			var item:SegmentTemplate = new SegmentTemplate(base);
+			
+			if (xml.attribute('timescale').length() > 0)
+				item.timescale = Number(xml.@timescale);
+			
+			if (xml.attribute('duration').length() > 0)
+				item.duration = Number(xml.@duration);
+			
+			if (xml.attribute('media').length() > 0)
+				item.mediaURL = xml.@media;
+			
+			if (xml.attribute('startNumber').length() > 0)
+				item.startNumber = xml.@startNumber;
+			
+			return item;
+		}
+		
+		/**
+		 * Called when the manifest has finished loading. 
+		 */		
 		protected function finishLoad():void {
 			dispatchEvent(new ParseEvent(ParseEvent.PARSE_COMPLETE, false, false, manifest));
 		}
 
+		/**
+		 * Called when there was an error while parsing the manifest. 
+		 */		
 		protected function error():void {
 			dispatchEvent(new ParseEvent(ParseEvent.PARSE_ERROR, false, false, null));
 		}
@@ -199,6 +309,9 @@ package net.digitalprimates.dash.parsers
 		//
 		//----------------------------------------
 
+		/**
+		 * Constructor. 
+		 */		
 		public function DashParser() {
 
 		}

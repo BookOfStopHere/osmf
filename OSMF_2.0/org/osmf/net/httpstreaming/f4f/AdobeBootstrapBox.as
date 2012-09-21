@@ -23,7 +23,7 @@ package org.osmf.net.httpstreaming.f4f
 {
 	import __AS3__.vec.Vector;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

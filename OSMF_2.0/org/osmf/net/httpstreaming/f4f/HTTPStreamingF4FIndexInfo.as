@@ -29,7 +29,7 @@ package org.osmf.net.httpstreaming.f4f
 	import org.osmf.net.httpstreaming.dvr.DVRInfo;
 	import org.osmf.elements.f4mClasses.BestEffortFetchInfo;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

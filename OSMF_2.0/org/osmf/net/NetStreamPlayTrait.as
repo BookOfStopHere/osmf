@@ -37,7 +37,7 @@ package org.osmf.net
 	import org.osmf.traits.PlayTrait;
 	import org.osmf.utils.OSMFStrings;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

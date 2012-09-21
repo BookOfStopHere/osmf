@@ -42,7 +42,7 @@ package org.osmf.media.pluginClasses
 	import org.osmf.utils.OSMFStrings;
 	import org.osmf.utils.Version;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * Dispatched when the PluginManager has successfully loaded a plugin.

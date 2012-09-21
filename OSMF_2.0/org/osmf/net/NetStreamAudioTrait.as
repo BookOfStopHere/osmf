@@ -26,7 +26,7 @@ package org.osmf.net
 	
 	import org.osmf.traits.AudioTrait;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

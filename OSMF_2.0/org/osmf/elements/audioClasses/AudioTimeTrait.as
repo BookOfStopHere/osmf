@@ -26,7 +26,7 @@ package org.osmf.elements.audioClasses
 	
 	import org.osmf.traits.TimeTrait;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

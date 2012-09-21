@@ -25,7 +25,7 @@ package org.osmf.net.dvr
 	
 	import org.osmf.utils.OSMFStrings;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

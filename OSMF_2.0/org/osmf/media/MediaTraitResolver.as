@@ -28,7 +28,7 @@ package org.osmf.media
 	import org.osmf.traits.MediaTraitType;
 	import org.osmf.utils.OSMFStrings;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * Dispatched when the resolver's resolvedTrait property changed.

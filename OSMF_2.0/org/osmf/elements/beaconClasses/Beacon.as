@@ -56,7 +56,7 @@ package org.osmf.elements.beaconClasses
 	 */
 	[Event(name="pingError",type="org.osmf.events.BeaconEvent")]
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

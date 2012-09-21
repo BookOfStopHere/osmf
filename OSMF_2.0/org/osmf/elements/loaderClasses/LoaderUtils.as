@@ -53,7 +53,7 @@ package org.osmf.elements.loaderClasses
 	import org.osmf.logging.Logger;
 	}
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

@@ -29,7 +29,7 @@ package org.osmf.net.httpstreaming.f4f
 	import org.osmf.net.httpstreaming.HTTPStreamingIndexInfoBase;
 	import org.osmf.net.httpstreaming.HTTPStreamingUtils;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

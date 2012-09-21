@@ -38,7 +38,7 @@ package org.osmf.elements.compositeClasses
 	import org.osmf.traits.DisplayObjectTrait;
 	import org.osmf.utils.OSMFStrings;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

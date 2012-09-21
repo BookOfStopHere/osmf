@@ -20,7 +20,7 @@
 *****************************************************/
 package org.osmf.net.dvr
 {
-	[ExcludeClass]
+	
 
 	/**
 	 * @private

@@ -34,7 +34,7 @@ package org.osmf.elements.audioClasses
 	import org.osmf.events.MediaErrorEvent;
 	import org.osmf.media.MediaElement;
     
-	[ExcludeClass]
+	
 	
 	/**
 	 * Dispatched when playback of the Sound completes.

@@ -37,7 +37,7 @@ package org.osmf.utils
 	import org.osmf.traits.LoadTrait;
 	import org.osmf.traits.LoaderBase;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

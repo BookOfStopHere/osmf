@@ -30,7 +30,7 @@ package org.osmf.elements.htmlClasses
 	import org.osmf.traits.LoadTrait;
 	import org.osmf.utils.OSMFStrings;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

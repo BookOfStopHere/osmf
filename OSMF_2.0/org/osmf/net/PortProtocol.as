@@ -23,7 +23,7 @@
 *****************************************************/
 package org.osmf.net
 {
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

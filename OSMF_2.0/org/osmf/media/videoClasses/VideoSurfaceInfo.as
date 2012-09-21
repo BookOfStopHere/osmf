@@ -1,6 +1,6 @@
 package org.osmf.media.videoClasses
 {
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

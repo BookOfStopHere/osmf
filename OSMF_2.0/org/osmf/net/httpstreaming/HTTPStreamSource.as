@@ -44,7 +44,7 @@ package org.osmf.net.httpstreaming
 		import org.osmf.logging.Logger;
 	}
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

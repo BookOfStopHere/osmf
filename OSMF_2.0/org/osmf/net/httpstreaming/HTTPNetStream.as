@@ -35,6 +35,7 @@ package org.osmf.net.httpstreaming
 	import org.osmf.events.QoSInfoEvent;
 	import org.osmf.media.MediaResourceBase;
 	import org.osmf.media.URLResource;
+	import org.osmf.net.ABRUtils;
 	import org.osmf.net.DynamicStreamingResource;
 	import org.osmf.net.NetClient;
 	import org.osmf.net.NetStreamCodes;
@@ -53,7 +54,6 @@ package org.osmf.net.httpstreaming
 	import org.osmf.net.qos.QoSInfo;
 	import org.osmf.net.qos.QualityLevel;
 	import org.osmf.utils.OSMFSettings;
-	import org.osmf.utils.OSMFStrings;
 	
 	CONFIG::LOGGING 
 	{	
@@ -68,7 +68,7 @@ package org.osmf.net.httpstreaming
 		import flash.events.DRMStatusEvent;
 	}
 	
-	[ExcludeClass]
+	
 
 	[Event(name="DVRStreamInfo", type="org.osmf.events.DVRStreamInfoEvent")]
 	
@@ -458,7 +458,7 @@ package org.osmf.net.httpstreaming
 		 * 
 		 * Changes audio track to load from an alternate track.
 		 */
-		private function changeAudioStreamTo(streamName:String):void
+		protected function changeAudioStreamTo(streamName:String):void
 		{
 			if (_mixer == null)
 			{
@@ -488,7 +488,7 @@ package org.osmf.net.httpstreaming
 					logger.debug("Initiating change of audio stream to [" + _desiredAudioStreamName + "]");
 				}
 				
-				var audioResource:MediaResourceBase = HTTPStreamingUtils.createHTTPStreamingResource(_resource, _desiredAudioStreamName);
+				var audioResource:MediaResourceBase = createAudioResource(_resource, _desiredAudioStreamName);
 				if (audioResource != null)
 				{
 					// audio handler is not dispatching events on the NetStream
@@ -505,6 +505,11 @@ package org.osmf.net.httpstreaming
 			}
 			
 			_notifyPlayUnpublishPending = false;
+		}
+		
+		protected function createAudioResource(resource:MediaResourceBase, streamName:String):MediaResourceBase
+		{
+			return HTTPStreamingUtils.createHTTPStreamingResource(resource, streamName);
 		}
 		
 		/**
@@ -1685,6 +1690,25 @@ package org.osmf.net.httpstreaming
 				_videoHandler = _mixer.video;
 			}
 		}
+		
+		// NW : Why bother making createSource protected if all the variables are private!?
+		
+		protected function setMixer(value:HTTPStreamMixer):void {
+			_mixer = value;
+		}
+		
+		protected function setSource(value:IHTTPStreamSource):void {
+			_source = value;
+		}
+		
+		protected function setVideoHandler(value:IHTTPStreamHandler):void {
+			_videoHandler = value;
+		}
+		
+		protected function get factory():HTTPStreamingFactory {
+			return _factory;
+		}
+		
 		///////////////////////////////////////////////////////////////////////////////////
 //		/**
 //		 * @private

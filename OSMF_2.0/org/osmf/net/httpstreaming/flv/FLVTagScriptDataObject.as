@@ -23,7 +23,7 @@ package org.osmf.net.httpstreaming.flv
 {
 	import flash.net.ObjectEncoding;
 		
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

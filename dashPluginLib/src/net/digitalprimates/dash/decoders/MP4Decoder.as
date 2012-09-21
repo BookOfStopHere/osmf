@@ -3,16 +3,15 @@ package net.digitalprimates.dash.decoders
 	import flash.utils.ByteArray;
 	import flash.utils.IDataInput;
 	
-	import net.digitalprimates.dash.FLVConverter;
 	import net.digitalprimates.dash.utils.Log;
-	import net.digitalprimates.dash.valueObjects.BoxInfo;
-	import net.digitalprimates.dash.valueObjects.MoofBox;
-	import net.digitalprimates.dash.valueObjects.NALActions;
-	import net.digitalprimates.dash.valueObjects.SidxBox;
-	import net.digitalprimates.dash.valueObjects.TfdtBox;
+	import net.digitalprimates.dash.valueObjects.*;
+	
+	import org.osmf.net.httpstreaming.flv.FLVTag;
+	import org.osmf.net.httpstreaming.flv.FLVTagAudio;
+	import org.osmf.net.httpstreaming.flv.FLVTagVideo;
 
 	/**
-	 * 
+	 * Parses MP4 fragments.
 	 * 
 	 * @author Nathan Weber
 	 */
@@ -24,16 +23,15 @@ package net.digitalprimates.dash.decoders
 		//
 		//----------------------------------------
 		
-		private var flvConverter:FLVConverter;
-		
 		private var currentBox:BoxInfo;
 		private var bytes:ByteArray;
+		private var bytesPending:Boolean = false;
 		
-		public var mediaDecodeTime:int = -1;
-		
-		private var seiMessage:Object; //SEIMessage
-		private var currentScSize:int;
-		private var prevScSize:int;
+		private var initialized:Boolean = false;
+		private var timescale:Number;
+		private var headerVideoTag:FLVTagVideo;
+		private var headerAudioTag:FLVTagAudio;
+		private var currentMoof:MoofBox;
 		
 		//----------------------------------------
 		//
@@ -41,31 +39,73 @@ package net.digitalprimates.dash.decoders
 		//
 		//----------------------------------------
 		
+		/**
+		 * @copy net.digitalprimates.dash.decoders.IDecoder#beginProcessData() 
+		 */		
 		public function beginProcessData():void {
 			currentBox = null;
+			initialized = false;
 		}
 		
+		/**
+		 * @copy net.digitalprimates.dash.decoders.IDecoder#processData() 
+		 * 
+		 * @private
+		 * 
+		 * mp4 fragments contain a series of boxes which hold all of the information about the video.
+		 * Below is a tree defining the box structure seen in a sample mp4.
+		 * The .mp4 file that is loaded from the initialization URL has the header data for the video file.
+		 * The contents of the initialization URL must be loaded into NetStream before any other data!
+		 * After the header has been loaded, the m4s fragment data can be pushed into NetStream.
+		 */		
 		public function processData(input:IDataInput, limit:Number = 0):ByteArray {
-			
 			/*
+			MP4 INITIALIZATION CONTENTS
+			
+			ftyp								file type and compatibility
+			free								free space
+			moov								container for all the metadata
+				mvhd							movie header, overall declarations
+				mvex							movie extends box
+					mehd						movie extends header box
+					trex						track extends defaults
+				trak							container for an individual track or stream
+					tkhd						track header, overall information about the track
+					mdia						container for the media information in a track
+						mdhd					media header, overall information about the media
+						hdlr					handler, declares the media (handler) type
+						minf					media information container
+							vmhd				video media header, overall information (video track only)
+							dinf				data information box, container
+								dref			data reference box, declares source(s) of media data in track
+									url			
+							stbl				sample table box, container for the time/space map
+								stsd			sample descriptions (codec types, initialization etc.)
+									avc1		
+										avcC	
+								stts			(decoding) time-to-sample
+								stsc			sample-to-chunk, partial data-offset information
+								stsz			sample sizes (framing)
+								stco			chunk offset, partial data-offset information
+			
 			M4S FRAGMENT CONTENTS
 			
-			styp			segment type
-			sidx			segment index
-			moof			movie fragment
-				mfhd		movie fragment header
-				traf		track fragment
-					tfhd	track fragment header
-					tfdt	track fragment decode time
-					trun	track fragment run
-			mdat			media data container
+			styp								segment type
+			sidx								segment index
+			moof								movie fragment
+				mfhd							movie fragment header
+				traf							track fragment
+					tfhd						track fragment header
+					tfdt						track fragment decode time
+					trun						track fragment run
+			mdat								media data container
 			*/
 			
 			var returnByteArray:ByteArray = null;
 			
 			// waiting for a box
 			if (!currentBox) {
-				currentBox = getNextBox(input);
+				currentBox = getNextBox(input, limit);
 				
 				if (currentBox != null) {
 					Log.log("parsed a box of type", currentBox.type);
@@ -80,9 +120,10 @@ package net.digitalprimates.dash.decoders
 					Log.log("could not parse a box");
 				}
 			}
+			
 			// have a box, but not the contents
-			else if (currentBox.data == null) {
-				var read:Boolean = readBoxData(currentBox, input);
+			if ((currentBox && currentBox.data == null) || bytesPending) {
+				var read:Boolean = readBoxData(currentBox, input, limit);
 				
 				if (read) {
 					Log.log("box contents read");
@@ -91,38 +132,96 @@ package net.digitalprimates.dash.decoders
 					Log.log("still waiting for box contents");
 				}
 			}
-			else {
-				// pull out the time
-				if (currentBox.type == BoxInfo.BOX_TYPE_MOOF) {
-					for each (var box:BoxInfo in currentBox.childrenBoxes) {
-						// get track info
-						if (box.type == BoxInfo.BOX_TYPE_TRAF) {
-							for each (var childBox:BoxInfo in box.childrenBoxes) {
-								if (childBox.type == BoxInfo.BOX_TYPE_TFDT) {
-									mediaDecodeTime = (childBox as TfdtBox).baseMediaDecodeTime;
-									break;
-								}
-							}
-							break;
+			
+			// we have a full box, so handle it
+			if (currentBox && currentBox.data != null) {
+				Log.log("trying to use box", currentBox.type);
+				switch (currentBox.type) {
+					case BoxInfo.BOX_TYPE_MOOV:
+						Log.log("got a MOOV box - parse header tags");
+						
+						/*
+						The moov box will be defined in the header file.
+						We need to read out the header data and save it so that we can write it out
+						to the NetStream later.
+						We also need to save the tags because they'll be referenced later when we
+						decode the video/audio frames.
+						*/
+						
+						// get the timescale for later
+						var moov:MoovBox = currentBox as MoovBox;
+						var hdlr:HdlrBox = moov.trak.mdia.hdlr;
+						
+						timescale = moov.trak.mdia.mdhd.timeScale;
+						
+						// build the configuration tag for video
+						if (hdlr.handlerType == HdlrBox.HANDLER_TYPE_VIDEO) {
+							headerVideoTag = new FLVTagVideo();
+							headerVideoTag.codecID = FLVTagVideo.CODEC_ID_AVC;
+							headerVideoTag.frameType = FLVTagVideo.FRAME_TYPE_KEYFRAME;
+							headerVideoTag.avcPacketType = FLVTagVideo.AVC_PACKET_TYPE_SEQUENCE_HEADER;
+							
+							var avcc:AvccBox = moov.trak.mdia.minf.stbl.stsd.sampleEntries[0].avcc;
+							headerVideoTag.data = avcc.configRecord;
 						}
-					}
-					if (mediaDecodeTime == -1) {
-						throw new Error("No time for movie fragment!");
-					}
-				}
-				
-				// we only care about the mdat box, so throw away any other boxes
-				if (currentBox.type != BoxInfo.BOX_TYPE_MDAT) {
-					Log.log("got a box we don't care about", currentBox.type);
-					// this will make the process start over
-					currentBox = null;
-				}
-				else {
-					Log.log("got an MDAT box");
-					returnByteArray = getFLVBytes(currentBox.data);
-					// and start over
-					mediaDecodeTime = -1;
-					currentBox = null;
+						// build the configuration tag for audio
+						else if (hdlr.handlerType == HdlrBox.HANDLER_TYPE_AUDIO) {
+							var mp4a:Mp4aBox = (moov.trak.mdia.minf.stbl.stsd.sampleEntries[0] as Mp4aBox);
+							
+							headerAudioTag = new FLVTagAudio();
+							headerAudioTag.soundFormat = FLVTagAudio.SOUND_FORMAT_AAC;
+							headerAudioTag.soundChannels = mp4a.channelCount;
+							headerAudioTag.soundRate = mp4a.sampleRateHi;
+							headerAudioTag.soundSize = mp4a.bitsPerSample;
+							headerAudioTag.isAACSequenceHeader = true;
+							headerAudioTag.data = mp4a.esds.es.decoderConfigDescriptor.decoderSpecificInfo.configData;
+						}
+						// we don't know how to handle this
+						else {
+							throw new Error("Unkown handler type!");
+						}
+						break;
+					
+					case BoxInfo.BOX_TYPE_MOOF:
+						Log.log("got a MOOF box");
+						// save this off for later, we'll need it when we build the stream fragments
+						currentMoof = currentBox as MoofBox;
+						clearCurrentBox();
+						break;
+					
+					case BoxInfo.BOX_TYPE_MDAT:
+						Log.log("got a MDAT box");
+						
+						/*
+						The mdat box contains all of the stream frames.  This is where the magic happens.
+						We have to grab each frame's data and repackage it as FLV data.  NetStream.appendBytes()
+						only accept FLV packaged data.  Passing anything else simply won't work.
+						OSMF has some convenience classes to package the stream data into FLV format..
+						FLVTag, FLVTagAudio, and FLVTagVideo.
+						We use these above when decoding the header.
+						We'll also use them below when decoding the stream frames.
+						See TrunBox for more information about how the frames are decoded.
+						*/
+						
+						// get the video data in FLV format
+						returnByteArray = getFLVBytes(currentBox.data);
+						
+						// start over if the video fragment is done being loaded
+						// the box will contain a limited amount of data based on how
+						// much we processed this pass
+						// check to see if we've gone through the entire mdat box
+						if (processingFLVBytesFinished) {
+							Log.log("finished a video fragment");
+							currentMoof = null;
+							clearCurrentBox();
+						}
+						break;
+					
+					default:
+						Log.log("got a box we don't care about", currentBox.type);
+						// this will make the process start over
+						clearCurrentBox();
+						break;
 				}
 			}
 			
@@ -135,7 +234,11 @@ package net.digitalprimates.dash.decoders
 		//
 		//----------------------------------------
 		
-		private function getNextBox(input:IDataInput):BoxInfo {
+		private function clearCurrentBox():void {
+			currentBox = null;
+		}
+		
+		private function getNextBox(input:IDataInput, limit:Number = 0):BoxInfo {
 			// not enough data!
 			if (input == null || input.bytesAvailable < BoxInfo.SIZE_AND_TYPE_LENGTH)
 				return null;
@@ -146,279 +249,141 @@ package net.digitalprimates.dash.decoders
 			var size:int = ba.readUnsignedInt(); // BoxInfo.FIELD_SIZE_LENGTH
 			var type:String = ba.readUTFBytes(BoxInfo.FIELD_TYPE_LENGTH);
 			
-			// TODO : check for large size... needed?
-			
 			var box:BoxInfo;
 			
 			switch (type) {
+				case BoxInfo.BOX_TYPE_FTYP:
+					box = new FtypBox(size);
+					break;
 				case BoxInfo.BOX_TYPE_MOOF:
 					box = new MoofBox(size);
 					break;
-				case BoxInfo.BOX_TYPE_SIDX:
-					box = new SidxBox(size);
+				case BoxInfo.BOX_TYPE_MDAT:
+					box = new MdatBox(size);
+					break;
+				case BoxInfo.BOX_TYPE_MOOV:
+					box = new MoovBox(size);
 					break;
 				default:
 					box = new BoxInfo(size, type);
 					break;
 			}
 			
-			readBoxData(box, input);
-			
-			if (box.type == BoxInfo.BOX_TYPE_MDAT && box.data) {
-				var temp:ByteArray = new ByteArray();
-				box.data.position = 615;
-				box.data.readBytes(temp, 0, 0);
-				box.data = temp;
-			}
+			readBoxData(box, input, limit);
 			
 			return box;
 		}
 		
-		private function readBoxData(box:BoxInfo, input:IDataInput):Boolean {
+		private function readBoxData(box:BoxInfo, input:IDataInput, limit:Number = 0):Boolean {
 			var bytesNeeded:int = (box.size - box.length);
 			
+			// mdat boxes will be processed as they download
+			// force the reading of the available data
+			var forced:Boolean = (box.type == BoxInfo.BOX_TYPE_MDAT);
+			
 			// not enough data
-			if (input.bytesAvailable < bytesNeeded)
+			if ((input.bytesAvailable < bytesNeeded) && !forced)
 				return false;
 			
 			Log.log("getting box contents", box.type, input.bytesAvailable, bytesNeeded);
 			
-			var data:ByteArray = new ByteArray();
-			input.readBytes(data, 0, bytesNeeded);
+			var data:ByteArray;
+			
+			bytesPending = false;
+			
+			var numBytesToRead:Number = bytesNeeded;
+			if (input.bytesAvailable < bytesNeeded) {
+				numBytesToRead = input.bytesAvailable;
+				bytesPending = true;
+				Log.log("not enough bytes, reading everything in");
+			}
+			
+			if (limit > 0 && numBytesToRead > limit) {
+				numBytesToRead = limit;
+				bytesPending = true;
+				Log.log("hit byte processing limit");
+			}
+			
+			// append to the box's data if it's already been created
+			if (box.data != null) {
+				Log.log("appending to existing data");
+				data = box.data;
+			}
+			else {
+				data = new ByteArray();
+			}
+			
+			input.readBytes(data, data.length, numBytesToRead);
 			
 			box.data = data;
 			
 			return true;
 		}
 		
+		private function get processingFLVBytesFinished():Boolean {
+			var trun:TrunBox = currentMoof.traf.trun;
+			return !trun.hasNext();
+		}
+		
+		/**
+		 * @private 
+		 * Returns the FLV data for an mdat.
+		 */		
 		private function getFLVBytes(bytes:ByteArray):ByteArray {
 			if (bytes) {
-				var avccBytes:ByteArray = getAvccBytes(bytes);
-				flvConverter.appendBytes(avccBytes);
-				return flvConverter.flush();
+				var flvBytes:ByteArray = new ByteArray();
+				
+				// get some boxes we need
+				var tfdt:TfdtBox = currentMoof.traf.tfdt;
+				var trun:TrunBox = currentMoof.traf.trun;
+				var tfhd:TfhdBox = currentMoof.traf.tfhd;
+				
+				// without these we don't have enough information to continue
+				// if these aren't here the video is probably malformed
+				if (!tfdt || !trun || !tfhd)
+					throw new Error("Missing video information!");
+				
+				// if we haven't written the headers to NetStream, do that FIRST
+				if (!initialized) {
+					if (headerVideoTag) {
+						headerVideoTag.timestamp = tfdt.baseMediaDecodeTime / timescale * 1000;
+						headerVideoTag.write(flvBytes);
+						initialized = true;
+					}
+					else if (headerAudioTag) {
+						headerAudioTag.timestamp = tfdt.baseMediaDecodeTime / timescale * 1000;
+						headerAudioTag.write(flvBytes);
+					}
+					initialized = true;
+				}
+				
+				// check to see if the trun has already started
+				// again, we only process so much each pass, so this may have already been kicked off
+				if (!trun.isProcessing()) {
+					if (headerVideoTag) {
+						trun.startSampling(tfdt.baseMediaDecodeTime, headerVideoTag);
+					}
+					else if (headerAudioTag) {
+						trun.startSampling(tfdt.baseMediaDecodeTime, headerAudioTag);
+					}
+					else {
+						throw new Error("Missing configuration tag.");
+					}
+				}
+				
+				// check to see that we have more to process and that we have enough data to process the next tag
+				while (trun.hasNext() && trun.canReadNextTag(bytes)) {
+					// get the tag from the trun - let it do the heavy lifting - and then write it to the FLV byte array
+					var tag:FLVTag = trun.getNextTag(timescale, tfhd.defSampleDuration, tfhd.defSampleFlags, bytes);
+					tag.write(flvBytes);
+				}
+				
+				// reset this to be nice for somebody else that wants to use it
+				flvBytes.position = 0;
+				return flvBytes;
 			}
 			
 			return null;
-		}
-		
-		public function findNextStartCode(bytes:ByteArray):Boolean {
-			var test:Array = [-1, -1, -1, -1];
-			
-			var c:int;
-			while ((c = bytes.readByte()) != -1 && bytes.bytesAvailable > 0) {
-				test[0] = test[1];
-				test[1] = test[2];
-				test[2] = test[3];
-				test[3] = c;
-				if (test[0] == 0 && test[1] == 0 && test[2] == 0 && test[3] == 1) {
-					prevScSize = currentScSize;
-					currentScSize = 4;
-					return true;
-				}
-				if (test[0] == 0 && test[1] == 0 && test[2] == 1) {
-					prevScSize = currentScSize;
-					currentScSize = 3;
-					return true;
-				}
-			}
-			return false;
-		}
-		
-		private var lastPos:int = 0;
-		
-		private function mark(bytes:ByteArray):void {
-			lastPos = bytes.position;
-		}
-		
-		private function reset(bytes:ByteArray):void {
-			bytes.position = lastPos;
-		}
-		
-		private function handleNALUnit(nal_ref_idc:int, nal_unit_type:int, data:Array):NALActions {
-			var action:NALActions;
-			switch (nal_unit_type) {
-				case 1:
-				case 2:
-				case 3:
-				case 4:
-				case 5:
-					action = NALActions.STORE; // Will only work in single slice per frame mode!
-					break;
-				
-				case 6:
-					//seiMessage = new SEIMessage(cleanBuffer(data), seqParameterSet);
-					action = NALActions.BUFFER;
-					break;
-				
-				case 9:
-					//                printAccessUnitDelimiter(data);
-					var type:int = data[1] >> 5;
-					Log.log("Access unit delimiter type: " + type);
-					action = NALActions.BUFFER;
-					break;
-				
-				case 7:
-					/*if (seqParameterSet == null) {
-						ByteArrayInputStream is = cleanBuffer(data);
-						is.read();
-						seqParameterSet = SeqParameterSet.read(is);
-						seqParameterSetList.add(data);
-						configureFramerate();
-					}*/
-					action = NALActions.IGNORE;
-					break;
-				
-				case 8:
-				/*if (pictureParameterSet == null) {
-					ByteArrayInputStream is = new ByteArrayInputStream(data);
-					is.read();
-					pictureParameterSet = PictureParameterSet.read(is);
-					pictureParameterSetList.add(data);
-				}*/
-				action = NALActions.IGNORE;
-				break;
-				
-				case 10:
-				case 11:
-					action = NALActions.END;
-					break;
-				
-				default:
-				throw new Error("Unknown NAL unit type: " + nal_unit_type);
-				action = NALActions.IGNORE;
-			}
-			
-			return action;
-		}
-		
-		private function getNALs(bytes:ByteArray):Array {
-			var nals:Array;
-			
-			if (!findNextStartCode(bytes)) {
-				throw new Error("No start code.");
-			}
-			
-			mark(bytes);
-			var pos:uint = bytes.position;
-			
-			while (findNextStartCode(bytes)) {
-				var newpos:uint = bytes.position;
-				var size:int = int(newpos - pos - prevScSize);
-				reset(bytes);
-				var data:Array = [];
-				var type:int = bytes.readByte();
-				var nal_ref_idc:int = (type >> 5) & 3;
-				var nal_unit_type:int = type & 0x1f;
-				Log.log("Found startcode at " + (pos -4)  + " Type: " + nal_unit_type + " ref idc: " + nal_ref_idc + " (size " + size + ")");
-				var action:NALActions = handleNALUnit(nal_ref_idc, nal_unit_type, data);
-				switch (action) {
-					case NALActions.IGNORE:
-						break;
-					
-					case NALActions.BUFFER:
-						//buffered.add(data);
-						break;
-					
-					case NALActions.STORE:
-						/*
-						int stdpValue = 22;
-						frameNr++;
-						buffered.add(data);
-						ByteBuffer bb = createSample(buffered);
-						boolean IdrPicFlag = false;
-						if (nal_unit_type == 5) {
-							stdpValue += 16;
-							IdrPicFlag = true;
-						}
-						ByteArrayInputStream bs = cleanBuffer(buffered.get(buffered.size() - 1));
-						SliceHeader sh = new SliceHeader(bs, seqParameterSet, pictureParameterSet, IdrPicFlag);
-						if (sh.slice_type == SliceHeader.SliceType.B) {
-							stdpValue += 4;
-						}
-						LOG.fine("Adding sample with size " + bb.capacity() + " and header " + sh);
-						buffered.clear();
-						samples.add(bb);
-						stts.add(new TimeToSampleBox.Entry(1, frametick));
-						if (nal_unit_type == 5) { // IDR Picture
-							stss.add(frameNr);
-						}
-						if (seiMessage.n_frames == 0) {
-							frameNrInGop = 0;
-						}
-						int offset = 0;
-						if (seiMessage.clock_timestamp_flag) {
-							offset = seiMessage.n_frames - frameNrInGop;
-						} else if (seiMessage.removal_delay_flag) {
-							offset = seiMessage.dpb_removal_delay / 2;
-						}
-						ctts.add(new CompositionTimeToSample.Entry(1, offset * frametick));
-						sdtp.add(new SampleDependencyTypeBox.Entry(stdpValue));
-						frameNrInGop++;
-						*/
-						break;
-					
-					case NALActions.END:
-						//return true;
-						
-						
-				}
-				pos = newpos;
-				bytes.position = currentScSize;
-				mark(bytes);
-			}
-			
-			return nals;
-		}
-		
-		private function getAvccBytes(bytes:ByteArray):ByteArray {
-			var avcc:ByteArray = new ByteArray;
-			
-			var nals:Array = getNALs(bytes);
-			
-			avcc.writeByte(0x01);			// avcC version 1
-			
-			
-			
-			
-			
-			/*
-			avcc.writeByte(0x01); // avcC version 1
-			// profile, compatibility, level
-			avcc.writeBytes(spsNAL.NALdata, 1, 3);
-			avcc.writeByte(0xff); // 111111 + 2 bit NAL size - 1
-			avcc.writeByte(0xe1); // number of SPS
-			avcc.writeByte(spsLength >> 8); // 16-bit SPS byte count
-			avcc.writeByte(spsLength);
-			avcc.writeBytes(spsNAL.NALdata, 0, spsLength); // the SPS
-			avcc.writeByte(0x01); // number of PPS
-			avcc.writeByte(ppsLength >> 8); // 16-bit PPS byte count
-			avcc.writeByte(ppsLength);
-			avcc.writeBytes(ppsNAL.NALdata, 0, ppsLength);
-			*/
-			
-			/*
-			avcc[cursor++] = 0;
-			avcc[cursor++] = 0;
-			avcc[cursor++] = 0;
-			avcc[cursor++] = 1; // version
-			avcc[cursor++] = m_sps[1]; // profile
-			avcc[cursor++] = m_sps[2]; // compatiblity
-			avcc[cursor++] = m_sps[3]; // level
-			avcc[cursor++] = 0xff; // nalu length length = 4 bytes: 111111xx, 00=1, 01=2, 10=3, 11=4
-			avcc[cursor++] = 0x01; // one SPS
-			avcc[cursor++] = (spsLength >> 8) & 0xff;
-			avcc[cursor++] = (spsLength     ) & 0xff;
-			avcc.position = cursor;
-			avcc.writeBytes(m_sps);
-			cursor += spsLength;
-			avcc[cursor++] = 1; // one PPS
-			avcc[cursor++] = (ppsLength >> 8) & 0xff;
-			avcc[cursor++] = (ppsLength     ) & 0xff;
-			avcc.position = cursor;
-			avcc.writeBytes(m_pps);
-			*/
-			
-			return avcc;
 		}
 		
 		//----------------------------------------
@@ -427,8 +392,11 @@ package net.digitalprimates.dash.decoders
 		//
 		//----------------------------------------
 		
+		/**
+		 * Constructor. 
+		 */		
 		public function MP4Decoder() {
-			flvConverter = new FLVConverter();
+			
 		}
 	}
 }

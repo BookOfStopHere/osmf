@@ -25,7 +25,7 @@ package org.osmf.net.httpstreaming
 	
 	import org.osmf.media.MediaResourceBase;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

@@ -27,7 +27,7 @@ package org.osmf.net.httpstreaming.dvr
 	import org.osmf.net.httpstreaming.HTTPNetStream;
 	import org.osmf.traits.DVRTrait;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

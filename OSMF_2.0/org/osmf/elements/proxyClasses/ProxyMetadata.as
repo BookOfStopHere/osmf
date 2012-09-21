@@ -28,7 +28,7 @@ package org.osmf.elements.proxyClasses
 	import org.osmf.metadata.Metadata;
 	import org.osmf.events.MetadataEvent;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

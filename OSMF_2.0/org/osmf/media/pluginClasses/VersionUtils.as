@@ -21,7 +21,7 @@
 *****************************************************/
 package org.osmf.media.pluginClasses
 {
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

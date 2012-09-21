@@ -24,7 +24,7 @@ package org.osmf.elements.htmlClasses
 	import org.osmf.elements.HTMLElement;
 	import org.osmf.traits.TimeTrait;
 
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

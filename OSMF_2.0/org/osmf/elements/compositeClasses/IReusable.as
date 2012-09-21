@@ -21,7 +21,7 @@
 *****************************************************/
 package org.osmf.elements.compositeClasses
 {
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

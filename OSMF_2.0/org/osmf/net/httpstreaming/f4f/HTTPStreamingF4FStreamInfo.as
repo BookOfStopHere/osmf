@@ -25,7 +25,7 @@ package org.osmf.net.httpstreaming.f4f
 	
 	import org.osmf.elements.f4mClasses.BootstrapInfo;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

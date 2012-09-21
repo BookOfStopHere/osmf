@@ -23,7 +23,7 @@ package org.osmf.metadata
 {
 	import org.osmf.elements.compositeClasses.CompositionMode;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private

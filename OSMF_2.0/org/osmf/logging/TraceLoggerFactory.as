@@ -23,7 +23,7 @@ package org.osmf.logging
 {
 	import flash.utils.Dictionary;
 	
-	[ExcludeClass]
+	
 	
 	/**
 	 * @private
