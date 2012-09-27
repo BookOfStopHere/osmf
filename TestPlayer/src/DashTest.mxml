@@ -22,15 +22,14 @@
 			
 			private static const ADOBE:String = "http://dash.edgesuite.net/adobe/bbb/bbb.mpd";
 			private static const MAIN_PROFILE:String = "http://download.tsi.telecom-paristech.fr/gpac/DASH_CONFORMANCE/TelecomParisTech/mp4-main-multi/mp4-main-multi-mpd-AV-NBS.mpd";
-			private static const LIVE_PROFILE:String = "http://download.tsi.telecom-paristech.fr/gpac/DASH_CONFORMANCE/TelecomParisTech/mp4-live/mp4-live-mpd-AV-NBS.mpd";
 			private static const A_TEAM:String = "http://demo.unified-streaming.com/video/ateam/ateam.ism/ateam.mpd?format=mp4&session_id=13196";
 			
 			override protected function getVideoSources():IList {
 				var list:ArrayList = new ArrayList();
 
-				list.addItem( new VideoSource( "Main", MAIN_PROFILE ) );
-				list.addItem( new VideoSource( "Live", LIVE_PROFILE ) );
-				list.addItem( new VideoSource( "A Team", A_TEAM ) );
+				list.addItem( new VideoSource( "Main MBR", MAIN_PROFILE ) );
+				list.addItem( new VideoSource( "A Team MBR", A_TEAM ) );
+				list.addItem( new VideoSource( "Bunny 720p", ADOBE ) );
 				
 				return list;
 			}

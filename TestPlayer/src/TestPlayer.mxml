@@ -12,8 +12,10 @@
 			import flash.utils.setTimeout;
 			
 			import mx.collections.IList;
+			import mx.events.CloseEvent;
 			import mx.events.FlexEvent;
 			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
 			
 			import net.digitalprimates.osmf.utils.PluginLoader;
 			import net.digitalprimates.osmf.utils.events.PluginLoaderEvent;
@@ -77,6 +79,8 @@
 			protected var player:MediaPlayer;
 			protected var container:MediaContainer;
 			
+			private var statisticsWindow:StatisticsWindow;
+			
 			protected function get plugins():Vector.<PluginInfoResource> {
 				return null;
 			}
@@ -98,6 +102,10 @@
 				if (!pluginLoader.load()) {
 					pluginsLoaded = true;
 				}
+				
+				statisticsWindow = PopUpManager.createPopUp(this, StatisticsWindow, false) as StatisticsWindow;
+				statisticsWindow.player = player;
+				statisticsWindow.addEventListener(CloseEvent.CLOSE, onStatisticsClose);
 			}
 			
 			private function sizeContainer():void {
@@ -110,24 +118,15 @@
 			protected function createPlayer():MediaPlayer {
 				var p:MediaPlayer = new MediaPlayer();
 				
-				p.addEventListener(MediaErrorEvent.MEDIA_ERROR, onMediaError);
-				p.addEventListener(BufferEvent.BUFFERING_CHANGE, onBufferingChange);
 				p.addEventListener(PlayEvent.PLAY_STATE_CHANGE, onPlayStateChange);
+				p.addEventListener(BufferEvent.BUFFERING_CHANGE, onBufferingChange);
 				p.addEventListener(SeekEvent.SEEKING_CHANGE, onSeekingChange);
 				p.addEventListener(TimeEvent.CURRENT_TIME_CHANGE, onTimeChange);
 				p.addEventListener(TimeEvent.DURATION_CHANGE, onDurationChange);
 				
 				p.autoDynamicStreamSwitch = false;
-				setTimeout(analytics, 1000);
-				
-				setTimeout(test, 1000);
 				
 				return p;
-			}
-			
-			private function test():void {
-				trace(player.bufferTime);
-				setTimeout(test, 1000);
 			}
 			
 			protected function createContainer():MediaContainer {
@@ -143,43 +142,22 @@
 			}
 			
 			protected function clear():void {
-				if (element) {
-					element.addEventListener(MediaElementEvent.TRAIT_ADD, onTraitAdd);
-					element.addEventListener(MediaElementEvent.TRAIT_REMOVE, onTraitRemove);
-				}
+					
 			}
 			
 			protected function startStream(url:String, autoPlay:Boolean=true):void {
-				titleLbl.text = "loading";
-				
 				loading.visible = false;
 				clear();
 				
 				resource = buildResource(url);
 				element = factory.createMediaElement(resource);
 				
-				element.addEventListener(MediaElementEvent.TRAIT_ADD, onTraitAdd);
-				element.addEventListener(MediaElementEvent.TRAIT_REMOVE, onTraitRemove);
+				statisticsWindow.element = element;
 				
 				player.autoPlay = autoPlay;
 				player.media = element;
 				
 				container.addMediaElement(element);
-			}
-			
-			private function analytics():void {
-				if (player.maxAllowedDynamicStreamIndex > 1) {
-					bitrateDownBtn.enabled = true;
-					bitrateUpBtn.enabled = true;
-					mbrLabel.text = "Bitrates: " + (player.currentDynamicStreamIndex+1) + " / " + (player.maxAllowedDynamicStreamIndex+1);
-				}
-				else {
-					bitrateDownBtn.enabled = false;
-					bitrateUpBtn.enabled = false;
-					mbrLabel.text = "Stream not MBR.";
-				}
-				
-				setTimeout(analytics, 1000);
 			}
 			
 			private function playStream():void {
@@ -203,16 +181,23 @@
 			
 			// HANDLERS /////////////////////////////////////////////////////////////////
 
-			private function onPluginsLoaded( event:PluginLoaderEvent ):void {
-				pluginLoader.removeEventListener( PluginLoaderEvent.LOAD_COMPLETE, onPluginsLoaded );
-				pluginLoader.removeEventListener( PluginLoaderEvent.LOAD_ERROR, onPluginsLoadError );
+			private function onStatisticsClose(event:CloseEvent):void {
+				statisticsWindow.player = null;
+				statisticsWindow.element = null;
+				PopUpManager.removePopUp(statisticsWindow);
+				statisticsWindow = null;
+			}
+			
+			private function onPluginsLoaded(event:PluginLoaderEvent):void {
+				pluginLoader.removeEventListener(PluginLoaderEvent.LOAD_COMPLETE, onPluginsLoaded);
+				pluginLoader.removeEventListener(PluginLoaderEvent.LOAD_ERROR, onPluginsLoadError);
 				pluginLoader = null;
 				pluginsLoaded = true;
 			}
 
-			private function onPluginsLoadError( event:PluginLoaderEvent ):void {
-				pluginLoader.removeEventListener( PluginLoaderEvent.LOAD_COMPLETE, onPluginsLoaded );
-				pluginLoader.removeEventListener( PluginLoaderEvent.LOAD_ERROR, onPluginsLoadError );
+			private function onPluginsLoadError(event:PluginLoaderEvent):void {
+				pluginLoader.removeEventListener(PluginLoaderEvent.LOAD_COMPLETE, onPluginsLoaded);
+				pluginLoader.removeEventListener(PluginLoaderEvent.LOAD_ERROR, onPluginsLoadError);
 				pluginLoader = null;
 				trace( "Error loading plugin." );
 			}
@@ -222,26 +207,11 @@
 				sizeContainer();
 			}
 			
-			private function onTraitAdd(event:MediaElementEvent):void {
-				
-			}
-			
-			private function onTraitRemove(event:MediaElementEvent):void {
-					
-			}
-			
-			private function onMediaError(event:MediaErrorEvent):void {
-				trace("Media Error:", event.error.detail);
-				titleLbl.text = "Error: " + event.error.detail;
-			}
-			
 			private function onBufferingChange(event:BufferEvent):void {
 				loading.visible = event.buffering;
 			}
 			
 			private function onPlayStateChange(event:PlayEvent):void {
-				titleLbl.text = event.playState;
-				
 				if (event.playState == PlayState.PLAYING) {
 					playPause.selected = true;
 				}
@@ -280,18 +250,6 @@
 				
 				scrubbing = false;
 			}
-			
-			private function onBitrateDownClick(event:Event):void {
-				if (player.currentDynamicStreamIndex > 0) {
-					player.switchDynamicStreamIndex(player.currentDynamicStreamIndex - 1);
-				}
-			}
-			
-			private function onBitrateUpClick(event:Event):void {
-				if (player.currentDynamicStreamIndex < player.maxAllowedDynamicStreamIndex) {
-					player.switchDynamicStreamIndex(player.currentDynamicStreamIndex + 1);
-				}
-			}
 		]]>
 	</fx:Script>
 	
@@ -299,29 +257,7 @@
 		
 		<s:HGroup width="100%" height="30" paddingLeft="20" paddingRight="20" verticalAlign="middle">
 			
-			<s:Label
-				id="titleLbl"
-				color="white"
-				fontSize="20"
-				text="Press Play"/>
-			
 			<s:Spacer width="100%"/>
-			
-			<mx:VRule height="100%"/>
-			
-			<s:Label
-				id="mbrLabel"
-				color="white"
-				fontSize="20"/>
-			
-			<s:Button
-				id="bitrateDownBtn"
-				label="Down"
-				click="onBitrateDownClick(event)"/>
-			<s:Button
-				id="bitrateUpBtn"
-				label="Up"
-				click="onBitrateUpClick(event)"/>
 			
 			<mx:VRule height="100%"/>
 			

@@ -203,7 +203,13 @@ package net.digitalprimates.dash.net
 				segmentCount = media.segments.length;
 			}
 			else if (media.segmentTemplate.timeline && media.segmentTemplate.timeline.fragments) {
-				segmentCount = media.segmentTemplate.timeline.fragments.length;
+				// TODO : Move to parsing step.. Just calculate the total number of fragments there.
+				// TODO : live?
+				segmentCount = 0;
+				for (var i:int = 0; i < media.segmentTemplate.timeline.fragments.length; i++) {
+					var frag:TimelineFragment = media.segmentTemplate.timeline.fragments[i];
+					segmentCount += (1 + frag.repeat);
+				}
 			}
 			
 			if (segmentCount != -1) {

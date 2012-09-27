@@ -9,6 +9,7 @@ package net.digitalprimates.dash.net
 	import net.digitalprimates.dash.utils.Log;
 	
 	import org.osmf.net.httpstreaming.HTTPStreamingFileHandlerBase;
+	import org.osmf.utils.OSMFSettings;
 
 	/**
 	 *
@@ -23,7 +24,7 @@ package net.digitalprimates.dash.net
 		//
 		//----------------------------------------
 		
-		private static const BOX_READ_LIMIT:Number = 102400 / 2;
+		private static const BOX_READ_LIMIT:Number = OSMFSettings.hdsBytesProcessingLimit;
 		
 		//----------------------------------------
 		//
