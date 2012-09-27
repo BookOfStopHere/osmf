@@ -9,6 +9,8 @@ package net.digitalprimates.dash.parsers
 	import net.digitalprimates.dash.valueObjects.Representation;
 	import net.digitalprimates.dash.valueObjects.Segment;
 	import net.digitalprimates.dash.valueObjects.SegmentTemplate;
+	import net.digitalprimates.dash.valueObjects.SegmentTimeline;
+	import net.digitalprimates.dash.valueObjects.TimelineFragment;
 	
 	import org.osmf.events.ParseEvent;
 	import org.osmf.net.StreamType;
@@ -109,6 +111,7 @@ package net.digitalprimates.dash.parsers
 			for each (var xml:XML in items) {
 				item = new AdaptationSet();
 				item.baseURL = (xml.internal_namespace::BaseURL.length() > 0) ? xml.internal_namespace::BaseURL[0].toString() : baseURL;
+				item.mimeType = xml.@mimeType;
 				
 				// get contentType from one level in
 				if (xml.internal_namespace::ContentComponent.length() > 0) {
@@ -126,7 +129,7 @@ package net.digitalprimates.dash.parsers
 						initURL = templateXML.@initialization;
 				}
 				
-				item.medias = parseRepresentations(xml..internal_namespace::Representation, item.baseURL, initURL, st);
+				item.medias = parseRepresentations(xml..internal_namespace::Representation, item.baseURL, initURL, item.mimeType, st);
 				
 				sets.push(item);
 			}
@@ -143,7 +146,7 @@ package net.digitalprimates.dash.parsers
 		 * @param baseSegmentTemplate
 		 * @return 
 		 */		
-		protected function parseRepresentations(items:XMLList, baseURL:String, initializationURL:String, baseSegmentTemplate:SegmentTemplate):Vector.<Representation> {
+		protected function parseRepresentations(items:XMLList, baseURL:String, initializationURL:String, baseMimeType:String, baseSegmentTemplate:SegmentTemplate):Vector.<Representation> {
 			var sets:Vector.<Representation> = new Vector.<Representation>();
 			var item:Representation;
 			
@@ -152,6 +155,9 @@ package net.digitalprimates.dash.parsers
 				item.baseURL = (xml.internal_namespace::BaseURL.length() > 0) ? xml.internal_namespace::BaseURL[0].toString() : baseURL;
 				item.id = xml.@id;
 				item.mimeType = xml.@mimeType;
+				if (item.mimeType == null || item.mimeType.length == 0) {
+					item.mimeType = baseMimeType;
+				}
 				
 				var codecList:String = String(xml.@codecs);
 				item.codecs = codecList.split(",");
@@ -285,6 +291,29 @@ package net.digitalprimates.dash.parsers
 			
 			if (xml.attribute('startNumber').length() > 0)
 				item.startNumber = xml.@startNumber;
+			
+			if (xml.internal_namespace::SegmentTimeline.length() > 0) {
+				var t:XML = xml.internal_namespace::SegmentTimeline[0];
+				var timeline:SegmentTimeline = new SegmentTimeline();
+				var collection:Vector.<TimelineFragment> = new Vector.<TimelineFragment>();
+				var frag:TimelineFragment;
+				for each (var f:XML in t..internal_namespace::S) {
+					frag = new TimelineFragment;
+					
+					if (f.attribute('t').length() > 0)
+						frag.time = f.@t;
+					
+					if (f.attribute('d').length() > 0)
+						frag.duration = f.@d;
+					
+					if (f.attribute('r').length() > 0)
+						frag.repeat = f.@r;
+					
+					collection.push(frag);
+				}
+				timeline.fragments = collection;
+				item.timeline = timeline;
+			}
 			
 			return item;
 		}

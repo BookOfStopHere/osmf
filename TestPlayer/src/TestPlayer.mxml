@@ -34,8 +34,6 @@
 			import org.osmf.media.URLResource;
 			import org.osmf.traits.PlayState;
 			
-			import spark.events.IndexChangeEvent;
-			
 			protected var autoPlay:Boolean = true;
 			
 			private var seeking:Boolean= false;
@@ -122,7 +120,14 @@
 				p.autoDynamicStreamSwitch = false;
 				setTimeout(analytics, 1000);
 				
+				setTimeout(test, 1000);
+				
 				return p;
+			}
+			
+			private function test():void {
+				trace(player.bufferTime);
+				setTimeout(test, 1000);
 			}
 			
 			protected function createContainer():MediaContainer {
@@ -145,10 +150,10 @@
 			}
 			
 			protected function startStream(url:String, autoPlay:Boolean=true):void {
+				titleLbl.text = "loading";
+				
 				loading.visible = false;
 				clear();
-				
-				Log.log(url);
 				
 				resource = buildResource(url);
 				element = factory.createMediaElement(resource);
@@ -177,6 +182,25 @@
 				setTimeout(analytics, 1000);
 			}
 			
+			private function playStream():void {
+				var url:String = videoInput.text;
+				var name:String = "";
+				
+				if (url == null || url.length == 0) {
+					var item:VideoSource = videoSelector.selectedItem as VideoSource;
+					url = item.url;
+					name = item.name;
+				}
+				
+				if (url == null || url.length == 0) {
+					return;
+				}
+				
+				if (pluginsLoaded) {
+					startStream(url, autoPlay);
+				}
+			}
+			
 			// HANDLERS /////////////////////////////////////////////////////////////////
 
 			private function onPluginsLoaded( event:PluginLoaderEvent ):void {
@@ -190,7 +214,7 @@
 				pluginLoader.removeEventListener( PluginLoaderEvent.LOAD_COMPLETE, onPluginsLoaded );
 				pluginLoader.removeEventListener( PluginLoaderEvent.LOAD_ERROR, onPluginsLoadError );
 				pluginLoader = null;
-				Log.log();
+				trace( "Error loading plugin." );
 			}
 
 			
@@ -199,15 +223,16 @@
 			}
 			
 			private function onTraitAdd(event:MediaElementEvent):void {
-				Log.log(event.traitType);
+				
 			}
 			
 			private function onTraitRemove(event:MediaElementEvent):void {
-				Log.log(event.traitType);	
+					
 			}
 			
 			private function onMediaError(event:MediaErrorEvent):void {
-				Log.log(event.error.detail);
+				trace("Media Error:", event.error.detail);
+				titleLbl.text = "Error: " + event.error.detail;
 			}
 			
 			private function onBufferingChange(event:BufferEvent):void {
@@ -215,6 +240,8 @@
 			}
 			
 			private function onPlayStateChange(event:PlayEvent):void {
+				titleLbl.text = event.playState;
+				
 				if (event.playState == PlayState.PLAYING) {
 					playPause.selected = true;
 				}
@@ -254,22 +281,6 @@
 				scrubbing = false;
 			}
 			
-			private function onVideoSelectorChange(event:IndexChangeEvent):void {
-				var item:VideoSource = event.target.selectedItem as VideoSource;
-				
-				if (!item)
-					return;
-				
-				titleLbl.text = item.name;
-				
-				if (pluginsLoaded) {
-					startStream(item.url, autoPlay);
-				}
-				else {
-					event.target.selectedIndex = -1;
-				}
-			}
-			
 			private function onBitrateDownClick(event:Event):void {
 				if (player.currentDynamicStreamIndex > 0) {
 					player.switchDynamicStreamIndex(player.currentDynamicStreamIndex - 1);
@@ -286,14 +297,17 @@
 	
 	<s:VGroup top="0" left="0" right="0" bottom="0" gap="0">
 		
-		<s:HGroup width="100%" height="45" paddingLeft="20" paddingRight="20">
+		<s:HGroup width="100%" height="30" paddingLeft="20" paddingRight="20" verticalAlign="middle">
 			
 			<s:Label
 				id="titleLbl"
 				color="white"
-				fontSize="20"/>
+				fontSize="20"
+				text="Press Play"/>
 			
 			<s:Spacer width="100%"/>
+			
+			<mx:VRule height="100%"/>
 			
 			<s:Label
 				id="mbrLabel"
@@ -309,14 +323,21 @@
 				label="Up"
 				click="onBitrateUpClick(event)"/>
 			
-			<s:Spacer width="100%"/>
+			<mx:VRule height="100%"/>
+			
+			<s:TextInput
+				id="videoInput"
+				width="350"/>
 			
 			<s:DropDownList
 				id="videoSelector"
 				width="350"
 				dataProvider="{getVideoSources()}"
-				labelField="name"
-				change="onVideoSelectorChange(event)"/>
+				labelField="name"/>
+			
+			<s:Button
+				label="Play"
+				click="playStream()"/>
 			
 		</s:HGroup>
 		

@@ -1,6 +1,8 @@
 package net.digitalprimates.dash.valueObjects
 {
 	import flash.utils.ByteArray;
+	
+	import net.digitalprimates.dash.utils.Log;
 
 	/**
 	 *
@@ -15,13 +17,13 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 
-		private var _baseMediaDecodeTime:Number;
+		private var _baseMediaDecodeTime:uint;
 
-		public function get baseMediaDecodeTime():Number {
+		public function get baseMediaDecodeTime():uint {
 			return _baseMediaDecodeTime;
 		}
 
-		public function set baseMediaDecodeTime(value:Number):void {
+		public function set baseMediaDecodeTime(value:uint):void {
 			_baseMediaDecodeTime = value;
 		}
 
@@ -35,7 +37,7 @@ package net.digitalprimates.dash.valueObjects
 			readFullBox(bitStream, this);
 
 			if (version == 1) {
-				baseMediaDecodeTime = data.readDouble();
+				baseMediaDecodeTime = BitStream.gf_bs_read_u64(this.bitStream);
 			} else {
 				baseMediaDecodeTime = data.readUnsignedInt();
 			}

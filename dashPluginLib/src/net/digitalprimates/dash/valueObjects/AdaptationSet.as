@@ -25,6 +25,8 @@ package net.digitalprimates.dash.valueObjects
 		public var baseURL:String;
 		public var id:String;
 		
+		public var mimeType:String;
+		
 		/**
 		 * "video" or "audio"
 		 * <p>Use <code>isVideo()</code> and <code>isAudio()</code> to determine content type.</p> 
@@ -37,11 +39,31 @@ package net.digitalprimates.dash.valueObjects
 		public var medias:Vector.<Representation>;
 		
 		public function get isVideo():Boolean {
-			return (contentType == CONTENT_TYPE_VIDEO);
+			// check contentType first
+			if (contentType != null && contentType.length > 0) {
+				return (contentType == CONTENT_TYPE_VIDEO);
+			}
+			// next check mimeType
+			else if (mimeType != null && mimeType.length > 0) {
+				return (mimeType.indexOf(CONTENT_TYPE_VIDEO) != -1);
+			}
+			else {
+				return false;
+			}
 		}
 		
 		public function get isAudio():Boolean {
-			return (contentType == CONTENT_TYPE_AUDIO);
+			// check contentType first
+			if (contentType != null && contentType.length > 0) {
+				return (contentType == CONTENT_TYPE_AUDIO);
+			}
+				// next check mimeType
+			else if (mimeType != null && mimeType.length > 0) {
+				return (mimeType.indexOf(CONTENT_TYPE_AUDIO) != -1);
+			}
+			else {
+				return false;
+			}
 		}
 	}
 }

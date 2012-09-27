@@ -19,7 +19,7 @@ package net.digitalprimates.dash
 		 * "Live" or "Recorded" 
 		 */		
 		public var streamType:String;
-		public var minBufferTime:Number;
+		public var minBufferTime:Number = 4;
 		public var duration:Number;
 		public var baseURL:String;
 		

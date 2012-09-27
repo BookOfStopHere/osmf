@@ -23,7 +23,7 @@ package net.digitalprimates.dash.net
 		//
 		//----------------------------------------
 		
-		private static const BOX_READ_LIMIT:Number = 102400 / 2; // half of what hds uses
+		private static const BOX_READ_LIMIT:Number = 102400 / 2;
 		
 		//----------------------------------------
 		//
@@ -63,12 +63,12 @@ package net.digitalprimates.dash.net
 		}
 
 		override public function processFileSegment(input:IDataInput):ByteArray {
-			Log.log();
+			//Log.log();
 			return processDataByFormat(input, BOX_READ_LIMIT, false);
 		}
 
 		override public function endProcessFile(input:IDataInput):ByteArray {
-			Log.log();
+			//Log.log();
 			var rv:ByteArray = processDataByFormat(input, BOX_READ_LIMIT, false);
 
 			finishProcessing();
@@ -77,7 +77,7 @@ package net.digitalprimates.dash.net
 		}
 
 		override public function flushFileSegment(input:IDataInput):ByteArray {
-			Log.log();
+			//Log.log();
 			var rv:ByteArray = processDataByFormat(input || new ByteArray(), 0, true);
 
 			finishProcessing();

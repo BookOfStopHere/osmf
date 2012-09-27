@@ -28,10 +28,13 @@ package net.digitalprimates.dash.utils
 			const HOUR_PATTERN:RegExp = /[0-9]+H/g;
 			const MINUTE_PATTERN:RegExp = /[0-9]+M/g;
 			const SECOND_PATTERN:RegExp = /[0-9]+\.[0-9]+S/g;
+			const SECOND_PATTERN2:RegExp = /[0-9]+S/g;
 
 			var hours:Number = extractNumber(time, HOUR_PATTERN);
 			var minutes:Number = extractNumber(time, MINUTE_PATTERN);
+			
 			var seconds:Number = extractNumber(time, SECOND_PATTERN);
+			seconds = extractNumber(time, SECOND_PATTERN2); // TODO : Multiple formats, how to know?!?!
 
 			return (hours * 60 * 60) + (minutes * 60) + seconds;
 		}

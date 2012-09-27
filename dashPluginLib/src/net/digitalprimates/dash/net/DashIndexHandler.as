@@ -4,6 +4,8 @@ package net.digitalprimates.dash.net
 	import net.digitalprimates.dash.valueObjects.Representation;
 	import net.digitalprimates.dash.valueObjects.Segment;
 	import net.digitalprimates.dash.valueObjects.SegmentTemplate;
+	import net.digitalprimates.dash.valueObjects.SegmentTimeline;
+	import net.digitalprimates.dash.valueObjects.TimelineFragment;
 	
 	import org.osmf.events.HTTPStreamingEvent;
 	import org.osmf.events.HTTPStreamingIndexHandlerEvent;
@@ -96,14 +98,28 @@ package net.digitalprimates.dash.net
 			
 			// if not, calculate which segment to load
 			if (!segmentRequest) {
-				var index:int = time / (media.segmentDuration / media.segmentTimescale);
+				var index:int = -1;
+				var fragmentDuration:Number;
+				var fragmentTime:Number;
+				
+				if (media.segmentTemplate && media.segmentTemplate.timeline) {
+					index = getIndexForTimeFromTemplate(time, media.segmentTemplate);
+					fragmentTime = getTimeForIndexFromTemplate(index, media.segmentTemplate);
+				}
+				// just use the segmentDuration value to figure out the index
+				else {
+					fragmentDuration = (media.segmentDuration / media.segmentTimescale);
+					index = time / fragmentDuration;
+				}
+				
+				if (index == -1)
+					throw new Error("Fragment could not be calculated!");
 				
 				currentSegmentIndex = index;
 				
-				// TODO : How to know when done using a segment template?
-				/*if (currentSegmentIndex >= media.segments.length) {
+				if (validateMediaDone(media)) {
 					return new HTTPStreamRequest(HTTPStreamRequestKind.DONE);
-				}*/
+				}
 				
 				if (media.segments) {
 					var segment:Segment = media.segments[currentSegmentIndex];
@@ -111,7 +127,7 @@ package net.digitalprimates.dash.net
 				}
 				else if (media.segmentTemplate) {
 					var absoluteIdx:int = currentSegmentIndex + media.segmentTemplate.startNumber;
-					segmentRequest = getRequestForTemplate(absoluteIdx, media.segmentTemplate, media);
+					segmentRequest = getRequestForTemplate(absoluteIdx, media.segmentTemplate, media, fragmentTime);
 				}
 				else {
 					throw new Error("Missing segment information.");
@@ -119,14 +135,15 @@ package net.digitalprimates.dash.net
 			}
 
 			Log.log(segmentRequest.url);
-			notifyFragmentDuration(media.segmentDuration / media.segmentTimescale);
+			notifyFragmentDuration(fragmentDuration);
 			return segmentRequest;
 		}
 
 		override public function getNextFile(quality:int):HTTPStreamRequest {
 			var info:DashStreamingInfo = streamIndexInfo.streamInfos[quality];
 			var media:Representation = info.media;
-
+			var done:Boolean = false;
+			
 			notifyTotalDuration(this.duration);
 			
 			// see if we get a request because of a quality change
@@ -135,12 +152,10 @@ package net.digitalprimates.dash.net
 			// if not, use the segment cursor
 			if (!segmentRequest) {
 				currentSegmentIndex++;
-				Log.log(currentSegmentIndex);
 				
-				// TODO : How to know when done using a segment template?
-				/*if (currentSegmentIndex >= media.segments.length) {
+				if (validateMediaDone(media)) {
 					return new HTTPStreamRequest(HTTPStreamRequestKind.DONE);
-				}*/
+				}
 				
 				var segmentRequest:HTTPStreamRequest;
 				
@@ -149,8 +164,14 @@ package net.digitalprimates.dash.net
 					segmentRequest = getRequestForSegment(segment, media);
 				}
 				else if (media.segmentTemplate) {
+					var fragmentTime:Number = -1;
+					
+					if (media.segmentTemplate && media.segmentTemplate.timeline) {
+						fragmentTime = getTimeForIndexFromTemplate(currentSegmentIndex, media.segmentTemplate);
+					}
+					
 					var absoluteIdx:int = currentSegmentIndex + media.segmentTemplate.startNumber;
-					segmentRequest = getRequestForTemplate(absoluteIdx, media.segmentTemplate, media);
+					segmentRequest = getRequestForTemplate(absoluteIdx, media.segmentTemplate, media, fragmentTime);
 				}
 				else {
 					throw new Error("Missing segment information.");
@@ -175,7 +196,86 @@ package net.digitalprimates.dash.net
 		// Internal Methods
 		//
 		//----------------------------------------
-
+		
+		private function validateMediaDone(media:Representation):Boolean {
+			var segmentCount:int = -1;
+			if (media.segments) {
+				segmentCount = media.segments.length;
+			}
+			else if (media.segmentTemplate.timeline && media.segmentTemplate.timeline.fragments) {
+				segmentCount = media.segmentTemplate.timeline.fragments.length;
+			}
+			
+			if (segmentCount != -1) {
+				if (currentSegmentIndex >= segmentCount) {
+					return true;
+				}
+			}
+			
+			// TODO : What if SegmentTemplate and no SegmentTimeline?
+			return false;
+		}
+		
+		private function getIndexForTimeFromTemplate(time:Number, template:SegmentTemplate):int {
+			if (!template || !template.timeline || !template.timeline.fragments || template.timeline.fragments.length == 0)
+				throw new Error("Missing template information.");
+			
+			var timeline:Vector.<TimelineFragment> = template.timeline.fragments;
+			
+			var t:Number = timeline[0].time;
+			var count:int = 0;
+			var k:int = 0;
+			var i:int;
+			
+			while (k < timeline.length) {
+				if (timeline[k].repeat > 0) {
+					for (i = 0; i < timeline[k].repeat; i++) {
+						if ((t + timeline[k].duration) >= time) return count;
+						count++;
+						t += timeline[k].duration;
+					}
+				}
+				else {
+					if ((t + timeline[k].duration) >= time) return count;
+					count++;
+					t += timeline[k].duration;
+				}
+				k++;
+			}
+			
+			return count;
+		}
+		
+		private function getTimeForIndexFromTemplate(index:int, template:SegmentTemplate):Number {
+			if (!template || !template.timeline || !template.timeline.fragments || template.timeline.fragments.length == 0)
+				throw new Error("Missing template information.");
+			
+			var timeline:Vector.<TimelineFragment> = template.timeline.fragments;
+			
+			var time:Number = timeline[0].time;
+			var count:int = 0;
+			var k:int = 0;
+			var i:int;
+			
+			while (true) {
+				if (timeline[k].repeat > 0) {
+					for (i = 0; i < timeline[k].repeat; i++) {
+						count++;
+						if (count > index) return time;
+						time += timeline[k].duration;
+					}
+				}
+				else {
+					count++;
+					if (count > index) return time;
+					time += timeline[k].duration;
+				}
+				k++;
+			}
+			
+			return time;
+		}
+		
 		protected function processQualityChange(quality:int):HTTPStreamRequest {
 			if (currentQuality != quality) {
 				currentQuality = quality;
@@ -186,7 +286,7 @@ package net.digitalprimates.dash.net
 				if (media.initialization != null && media.initialization.length > 0) {
 					var requestURL:String = buildRequestUrl(media.initialization, media.baseURL);
 					// might have some wildcards in here to replace
-					requestURL = SegmentTemplate.replaceRepresentationID(requestURL, media);					
+					requestURL = SegmentTemplate.replacements(requestURL, media);
 					return new HTTPStreamRequest(HTTPStreamRequestKind.DOWNLOAD, requestURL);
 				}
 			}
@@ -199,10 +299,9 @@ package net.digitalprimates.dash.net
 			return new HTTPStreamRequest(HTTPStreamRequestKind.DOWNLOAD, requestURL);
 		}
 		
-		protected function getRequestForTemplate(index:int, template:SegmentTemplate, media:Representation):HTTPStreamRequest {
+		protected function getRequestForTemplate(index:int, template:SegmentTemplate, media:Representation, time:Number):HTTPStreamRequest {
 			var mediaURL:String = media.segmentTemplate.mediaURL;
-			mediaURL = SegmentTemplate.replaceRepresentationID(mediaURL, media);
-			mediaURL = SegmentTemplate.replaceSegmentID(mediaURL, index);
+			mediaURL = SegmentTemplate.replacements(mediaURL, media, index, time);
 			
 			var requestURL:String = buildRequestUrl(mediaURL, media.baseURL);
 			return new HTTPStreamRequest(HTTPStreamRequestKind.DOWNLOAD, requestURL);

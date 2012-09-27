@@ -112,9 +112,9 @@ package net.digitalprimates.dash.valueObjects
 		public static function gf_bs_read_u64(bs:BitStream):uint
 		{
 			var ret:uint;
-			ret = gf_bs_read_u32(bs);
+			ret = bs.data.readInt(); // gf_bs_read_u32(bs);
 			ret<<=32;
-			ret |= gf_bs_read_u32(bs);
+			ret |= bs.data.readInt(); //gf_bs_read_u32(bs);
 			return ret;
 		}
 		

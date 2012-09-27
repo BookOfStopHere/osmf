@@ -171,7 +171,7 @@ package net.digitalprimates.dash.decoders
 							headerAudioTag = new FLVTagAudio();
 							headerAudioTag.soundFormat = FLVTagAudio.SOUND_FORMAT_AAC;
 							headerAudioTag.soundChannels = mp4a.channelCount;
-							headerAudioTag.soundRate = mp4a.sampleRateHi;
+							headerAudioTag.soundRate = FLVTagAudio.SOUND_RATE_44K; // mp4a.sampleRateHi;
 							headerAudioTag.soundSize = mp4a.bitsPerSample;
 							headerAudioTag.isAACSequenceHeader = true;
 							headerAudioTag.data = mp4a.esds.es.decoderConfigDescriptor.decoderSpecificInfo.configData;
@@ -345,6 +345,7 @@ package net.digitalprimates.dash.decoders
 				
 				// if we haven't written the headers to NetStream, do that FIRST
 				if (!initialized) {
+					Log.log("init decoding", tfdt.baseMediaDecodeTime);
 					if (headerVideoTag) {
 						headerVideoTag.timestamp = tfdt.baseMediaDecodeTime / timescale * 1000;
 						headerVideoTag.write(flvBytes);

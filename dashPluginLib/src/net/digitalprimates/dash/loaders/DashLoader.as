@@ -191,6 +191,7 @@ package net.digitalprimates.dash.loaders
 			var httpMetadata:Metadata = new Metadata();
 			resource.addMetadataValue(DashMetadataNamespaces.HTTP_STREAMING_METADATA, httpMetadata);
 			httpMetadata.addValue(DashMetadataNamespaces.HTTP_STREAMING_PERIOD_DURATION_KEY, manifest.duration);
+			httpMetadata.addValue(DashMetadataNamespaces.HTTP_STREAMING_MIN_BUFFER_TIME_KEY, manifest.minBufferTime);
 			
 			var adaptation:AdaptationSet;
 			var media:Representation;

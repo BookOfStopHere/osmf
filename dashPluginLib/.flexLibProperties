@@ -44,6 +44,9 @@
     <classEntry path="net.digitalprimates.dash.parsers.IParser"/>
     <classEntry path="net.digitalprimates.dash.builders.IDashBuilder"/>
     <classEntry path="net.digitalprimates.dash.valueObjects.Sample"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.SegmentTimeline"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.TimelineFragment"/>
+    <classEntry path="net.digitalprimates.dash.traits.DashBufferTrait"/>
   </includeClasses>
   <includeResources/>
   <namespaceManifests/>
