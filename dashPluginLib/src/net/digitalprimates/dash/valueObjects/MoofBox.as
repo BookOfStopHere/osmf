@@ -7,7 +7,7 @@ package net.digitalprimates.dash.valueObjects
 	 *
 	 * @author Nathan Weber
 	 */
-	public class MoofBox extends BoxInfo
+	public class MoofBox extends ParentBox
 	{
 		//----------------------------------------
 		//
@@ -25,14 +25,14 @@ package net.digitalprimates.dash.valueObjects
 			_mfhd = value;
 		}
 
-		private var _traf:TrafBox;
+		private var _tracks:Vector.<TrafBox>;
 
-		public function get traf():TrafBox {
-			return _traf;
+		public function get tracks():Vector.<TrafBox> {
+			return _tracks;
 		}
 
-		public function set traf(value:TrafBox):void {
-			_traf = value;
+		public function set tracks(value:Vector.<TrafBox>):void {
+			_tracks = value;
 		}
 
 		//----------------------------------------
@@ -41,45 +41,18 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 
-		override protected function parse():void {
-			/*
-			moof			movie fragment
-				mfhd		movie fragment header
-				traf		track fragment
-					tfhd	track fragment header
-					tfdt	track fragment decode time
-					trun	track fragment run
-			*/
-
-			var ba:ByteArray;
-			var size:int;
-			var type:String;
-			var boxData:ByteArray;
-
-			while (data.bytesAvailable > SIZE_AND_TYPE_LENGTH) {
-				ba = new ByteArray();
-				data.readBytes(ba, 0, BoxInfo.SIZE_AND_TYPE_LENGTH);
-
-				size = ba.readUnsignedInt(); // BoxInfo.FIELD_SIZE_LENGTH
-				type = ba.readUTFBytes(BoxInfo.FIELD_TYPE_LENGTH);
-
-				boxData = new ByteArray();
-				data.readBytes(boxData, 0, size - BoxInfo.SIZE_AND_TYPE_LENGTH);
-
-				switch (type) {
-					case BOX_TYPE_MFHD:
-						mfhd = new MfhdBox(size, boxData);
-						break;
-					case BOX_TYPE_TRAF:
-						traf = new TrafBox(size, boxData);
-						break;
-				}
+		override protected function setChildBox(box:BoxInfo):void {
+			if (!tracks)
+				tracks = new Vector.<TrafBox>();
+			
+			if (box is TrafBox) {
+				tracks.push(box as TrafBox);
 			}
-
-			// reset
-			data.position = 0;
+			else {
+				super.setChildBox(box);
+			}
 		}
-
+		
 		//----------------------------------------
 		//
 		// Constructor

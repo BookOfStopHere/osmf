@@ -35,24 +35,14 @@ package net.digitalprimates.dash.valueObjects
 			_modificationTime = value;
 		}
 
-		private var _trackID:int;
+		private var _trackId:int;
 
-		public function get trackID():int {
-			return _trackID;
+		public function get trackId():int {
+			return _trackId;
 		}
 
-		public function set trackID(value:int):void {
-			_trackID = value;
-		}
-
-		private var _reserved1:int;
-
-		public function get reserved1():int {
-			return _reserved1;
-		}
-
-		public function set reserved1(value:int):void {
-			_reserved1 = value;
+		public function set trackId(value:int):void {
+			_trackId = value;
 		}
 
 		private var _duration:Number;
@@ -63,16 +53,6 @@ package net.digitalprimates.dash.valueObjects
 
 		public function set duration(value:Number):void {
 			_duration = value;
-		}
-
-		private var _reserved2:Array;
-
-		public function get reserved2():Array {
-			return _reserved2;
-		}
-
-		public function set reserved2(value:Array):void {
-			_reserved2 = value;
 		}
 
 		private var _layer:uint;
@@ -105,16 +85,6 @@ package net.digitalprimates.dash.valueObjects
 			_volume = value;
 		}
 
-		private var _reserved3:uint;
-
-		public function get reserved3():uint {
-			return _reserved3;
-		}
-
-		public function set reserved3(value:uint):void {
-			_reserved3 = value;
-		}
-
 		private var _matrix:Array;
 
 		public function get matrix():Array {
@@ -125,23 +95,23 @@ package net.digitalprimates.dash.valueObjects
 			_matrix = value;
 		}
 
-		private var _width:int;
+		private var _width:Number;
 
-		public function get width():int {
+		public function get width():Number {
 			return _width;
 		}
 
-		public function set width(value:int):void {
+		public function set width(value:Number):void {
 			_width = value;
 		}
 
-		private var _height:int;
+		private var _height:Number;
 
-		public function get height():int {
+		public function get height():Number {
 			return _height;
 		}
 
-		public function set height(value:int):void {
+		public function set height(value:Number):void {
 			_height = value;
 		}
 
@@ -152,52 +122,49 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			readFullBox(bitStream, this);
+			parseVersionAndFlags();
 
 			if (version == 1) {
-				creationTime = data.readDouble();
-				modificationTime = data.readDouble();
-				trackID = data.readUnsignedInt();
-				reserved1 = data.readUnsignedInt();
-				duration = data.readDouble();
+				creationTime = bitStream.readUInt64();
+				modificationTime = bitStream.readUInt64();
+				trackId = bitStream.readUInt32();
+				bitStream.readUInt32();
+				duration = bitStream.readUInt64();
 			}
 			else {
-				creationTime = data.readUnsignedInt();
-				modificationTime = data.readUnsignedInt();
-				trackID = data.readUnsignedInt();
-				reserved1 = data.readUnsignedInt();
-				duration = data.readUnsignedInt();
+				creationTime = bitStream.readUInt32();
+				modificationTime = bitStream.readUInt32();
+				trackId = bitStream.readUInt32();
+				bitStream.readUInt32();
+				duration = bitStream.readUInt32();
 			}
-
-			reserved2 = [];
-			reserved2[0] = data.readUnsignedInt();
-			reserved2[1] = data.readUnsignedInt();
-			layer = data.readUnsignedShort();
-			alternateGroup = data.readUnsignedShort();
-			volume = data.readUnsignedShort();
-			reserved3 = data.readUnsignedShort();
+			
+			bitStream.readUInt32();
+			bitStream.readUInt32();
+			layer = bitStream.readUInt16();
+			alternateGroup = bitStream.readUInt16();
+			volume = bitStream.readFixedPoint88();
+			bitStream.readUInt16();
+			
 			matrix = [];
-			matrix[0] = data.readUnsignedInt();
-			matrix[1] = data.readUnsignedInt();
-			matrix[2] = data.readUnsignedInt();
-			matrix[3] = data.readUnsignedInt();
-			matrix[4] = data.readUnsignedInt();
-			matrix[5] = data.readUnsignedInt();
-			matrix[6] = data.readUnsignedInt();
-			matrix[7] = data.readUnsignedInt();
-			matrix[8] = data.readUnsignedInt();
-
-			// TODO : These should be data.readUnsignedInt()...
-			//		  Doing that causes a wrong value!  It appears that the actual value
-			//		  is only the first 16 bits of the 32 bits.  I don't know why!
-
-			width = data.readUnsignedShort();
-			data.readUnsignedShort(); //skip
-
-			height = data.readUnsignedShort();
-			data.readUnsignedShort(); //skip
-
-			data.position = 0;
+			for (var i:int = 0; i < 9; i++) {
+				matrix[i] = bitStream.readUInt32();
+			}
+			
+			width = bitStream.readFixedPoint1616();
+			height = bitStream.readFixedPoint1616();
+			
+			/*
+			// These should be bitStream.readUInt32()...
+			// Doing that causes a wrong value!  It appears that the actual value
+			// is only the first 16 bits of the 32 bits.  I don't know why!
+			width = bitStream.readUInt16();
+			bitStream.readUInt16(); //skip
+			height = bitStream.readUInt16();
+			bitStream.readUInt16(); //skip
+			*/
+			
+			bitStream.position = 0;
 		}
 
 		//----------------------------------------

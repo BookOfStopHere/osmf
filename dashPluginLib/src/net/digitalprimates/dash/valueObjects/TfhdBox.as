@@ -28,14 +28,14 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 
-		private var _trackID:int = 0;
+		private var _trackId:int = 0;
 
-		public function get trackID():int {
-			return _trackID;
+		public function get trackId():int {
+			return _trackId;
 		}
 
-		public function set trackID(value:int):void {
-			_trackID = value;
+		public function set trackId(value:int):void {
+			_trackId = value;
 		}
 
 		private var _baseDataOffset:Number = 0;
@@ -95,28 +95,28 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			readFullBox(bitStream, this);
+			parseVersionAndFlags();
 
-			trackID = data.readInt();
+			trackId = bitStream.readUInt32();
 
 			//The rest depends on the flags
 			if (flags & GF_ISOM_TRAF_BASE_OFFSET) {
-				baseDataOffset = data.readDouble();
+				baseDataOffset = bitStream.readUInt64();
 			}
 			if (flags & GF_ISOM_TRAF_SAMPLE_DESC) {
-				sampleDescIndex = data.readInt();
+				sampleDescIndex = bitStream.readUInt32();
 			}
 			if (flags & GF_ISOM_TRAF_SAMPLE_DUR) {
-				defSampleDuration = data.readInt();
+				defSampleDuration = bitStream.readUInt32();
 			}
 			if (flags & GF_ISOM_TRAF_SAMPLE_SIZE) {
-				defSampleSize = data.readInt();
+				defSampleSize = bitStream.readUInt32();
 			}
 			if (flags & GF_ISOM_TRAF_SAMPLE_FLAGS) {
-				defSampleFlags = data.readInt();
+				defSampleFlags = bitStream.readUInt32();
 			}
 
-			data.position = 0;
+			bitStream.position = 0;
 		}
 
 		//----------------------------------------

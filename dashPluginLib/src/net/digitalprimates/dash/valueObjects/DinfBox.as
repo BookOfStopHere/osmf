@@ -7,7 +7,7 @@ package net.digitalprimates.dash.valueObjects
 	 * 
 	 * @author Nathan Weber
 	 */
-	public class DinfBox extends BoxInfo
+	public class DinfBox extends ParentBox
 	{
 		//----------------------------------------
 		//
@@ -15,55 +15,16 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 		
-		private var _dref:DrefBox;
+		private var _dref:BoxInfo;
 
-		public function get dref():DrefBox {
+		public function get dref():BoxInfo {
 			return _dref;
 		}
 
-		public function set dref(value:DrefBox):void {
+		public function set dref(value:BoxInfo):void {
 			_dref = value;
 		}
-		
-		//----------------------------------------
-		//
-		// Internal Methods
-		//
-		//----------------------------------------
-		
-		override protected function parse():void {
-			/*
-			dinf				data information box, container
-				dref			data reference box, declares source(s) of media data in track
-					url			
-			*/
-			
-			var ba:ByteArray;
-			var size:int;
-			var type:String;
-			var boxData:ByteArray;
-			
-			while (data.bytesAvailable > SIZE_AND_TYPE_LENGTH) {
-				ba = new ByteArray();
-				data.readBytes(ba, 0, BoxInfo.SIZE_AND_TYPE_LENGTH);
-				
-				size = ba.readUnsignedInt(); // BoxInfo.FIELD_SIZE_LENGTH
-				type = ba.readUTFBytes(BoxInfo.FIELD_TYPE_LENGTH);
-				
-				boxData = new ByteArray();
-				data.readBytes(boxData, 0, size - BoxInfo.SIZE_AND_TYPE_LENGTH);
-				
-				switch (type) {
-					case BOX_TYPE_DREF:
-						dref = new DrefBox(size, boxData);
-						break;
-				}
-			}
-			
-			// reset
-			data.position = 0;
-		}
-		
+
 		//----------------------------------------
 		//
 		// Constructor

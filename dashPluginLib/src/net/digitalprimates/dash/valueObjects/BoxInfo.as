@@ -1,10 +1,15 @@
 package net.digitalprimates.dash.valueObjects
 {
 	import flash.utils.ByteArray;
+	
+	import net.digitalprimates.dash.utils.BaseBoxFactory;
+	import net.digitalprimates.dash.utils.BaseDescriptorFactory;
+	import net.digitalprimates.dash.utils.IBoxFactory;
+	import net.digitalprimates.dash.utils.IDescriptorFactory;
 
 	/**
-	 * 
-	 * 
+	 *
+	 *
 	 * @author Nathan Weber
 	 */
 	public class BoxInfo
@@ -14,7 +19,7 @@ package net.digitalprimates.dash.valueObjects
 		// Constants
 		//
 		//----------------------------------------
-		
+
 		public static const BOX_TYPE_FTYP:String = "ftyp";
 		public static const BOX_TYPE_FREE:String = "free";
 		public static const BOX_TYPE_MVHD:String = "mvhd";
@@ -55,68 +60,73 @@ package net.digitalprimates.dash.valueObjects
 		public static const FIELD_SIZE_LENGTH:uint = 4;
 		public static const FIELD_TYPE_LENGTH:uint = 4;
 		public static const SIZE_AND_TYPE_LENGTH:uint = FIELD_SIZE_LENGTH + FIELD_TYPE_LENGTH;
-		
+
 		//----------------------------------------
 		//
 		// Variables
 		//
 		//----------------------------------------
-		
+
 		protected var bitStream:BitStream;
-		
+
 		//----------------------------------------
 		//
 		// Properties
 		//
 		//----------------------------------------
-		
+
 		private var _flags:uint;
-		
+
 		public function get flags():uint {
 			return _flags;
 		}
-		
+
 		public function set flags(value:uint):void {
 			_flags = value;
 		}
-		
+
 		private var _size:int;
-		
+
 		public function get size():int {
 			return _size;
 		}
-		
+
 		private var _type:String;
-		
+
 		public function get type():String {
 			return _type;
 		}
-		
+
 		private var _data:ByteArray;
-		
-		public function get data():ByteArray {
+
+		public function get existingData():ByteArray {
 			return _data;
 		}
-
+		
 		public function set data(value:ByteArray):void {
 			_data = value;
-			
-			bitStream = new BitStream(_data);
-			
-			if (_data && _data.bytesAvailable > 0)
+
+			if (_data == null) {
+				bitStream = null;
+				ready = false;
+			}
+			else {
+				bitStream = new BitStream(_data);
+				ready = true;
 				parse();
+			}
 		}
-		
+
 		public function get length():int {
 			var l:int = SIZE_AND_TYPE_LENGTH; // assume we have a type and size at least
-			if (data)
-				l += data.length;
-			
+			if (_data)
+				l += _data.length;
+
 			return l;
 		}
-		
+
 		private var _version:int;
-		
+
 		public function get version():int {
 			return _version;
 		}
@@ -124,33 +134,78 @@ package net.digitalprimates.dash.valueObjects
 		public function set version(value:int):void {
 			_version = value;
 		}
-		
+
+		private var _ready:Boolean = false;
+
+		public function get ready():Boolean {
+			return _ready;
+		}
+
+		public function set ready(value:Boolean):void {
+			_ready = value;
+		}
+
 		//----------------------------------------
 		//
 		// Internal Methods
 		//
 		//----------------------------------------
-		
-		internal static function readFullBox(bs:BitStream, source:BoxInfo):void
-		{
-			if (bs.data.length < 4)
+
+		private var _boxFactory:IBoxFactory;
+
+		protected function get boxFactory():IBoxFactory {
+			if (!_boxFactory) {
+				_boxFactory = new BaseBoxFactory();
+			}
+
+			return _boxFactory;
+		}
+
+		private var _descriptorFactory:IDescriptorFactory;
+
+		protected function get descriptorFactory():IDescriptorFactory {
+			if (!_descriptorFactory) {
+				_descriptorFactory = new BaseDescriptorFactory();
+			}
+
+			return _descriptorFactory;
+		}
+
+		protected function parseVersionAndFlags():void {
+			if (bitStream.length < 4)
 				return;
-			
-			source.version = uint(bs.data.readByte());
-			source.flags = BitStream.gf_bs_read_u24(bs);
+
+			version = bitStream.readUInt8();
+			flags = bitStream.readUInt24();
 		}
-		
+
 		protected function parse():void {
-			// override in a subclass if required
+			parseVersionAndFlags();
+			bitStream.position = 0;
 		}
-		
+
+		protected function parseChildrenBoxes():void {
+			var box:BoxInfo;
+
+			while (bitStream.bytesAvailable > SIZE_AND_TYPE_LENGTH) {
+				box = boxFactory.getInstance(bitStream, true);
+				setChildBox(box);
+			}
+		}
+
+		protected function setChildBox(box:BoxInfo):void {
+			if (this.hasOwnProperty(box.type)) {
+				this[box.type] = box;
+			}
+		}
+
 		//----------------------------------------
 		//
 		// Constructor
 		//
 		//----------------------------------------
-		
-		public function BoxInfo(size:int, type:String, data:ByteArray=null) {
+
+		public function BoxInfo(size:int, type:String, data:ByteArray = null) {
 			_size = size;
 			_type = type;
 			this.data = data;

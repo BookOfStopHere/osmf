@@ -7,7 +7,7 @@ package net.digitalprimates.dash.valueObjects
 	 *
 	 * @author Nathan Weber
 	 */
-	public class MinfBox extends BoxInfo
+	public class MinfBox extends ParentBox
 	{
 		//----------------------------------------
 		//
@@ -15,13 +15,13 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 
-		private var _vmhd:VmhdBox;
+		private var _vmhd:BoxInfo;
 
-		public function get vmhd():VmhdBox {
+		public function get vmhd():BoxInfo {
 			return _vmhd;
 		}
 
-		public function set vmhd(value:VmhdBox):void {
+		public function set vmhd(value:BoxInfo):void {
 			_vmhd = value;
 		}
 
@@ -43,61 +43,6 @@ package net.digitalprimates.dash.valueObjects
 
 		public function set stbl(value:StblBox):void {
 			_stbl = value;
-		}
-
-		//----------------------------------------
-		//
-		// Internal Methods
-		//
-		//----------------------------------------
-
-		override protected function parse():void {
-			/*
-			minf					media information container
-				vmhd				video media header, overall information (video track only)
-				dinf				data information box, container
-					dref			data reference box, declares source(s) of media data in track
-						url
-				stbl				sample table box, container for the time/space map
-					stsd			sample descriptions (codec types, initialization etc.)
-						avc1
-							avcC
-					stts			(decoding) time-to-sample
-					stsc			sample-to-chunk, partial data-offset information
-					stsz			sample sizes (framing)
-					stco			chunk offset, partial data-offset information
-			*/
-
-			var ba:ByteArray;
-			var size:int;
-			var type:String;
-			var boxData:ByteArray;
-
-			while (data.bytesAvailable > SIZE_AND_TYPE_LENGTH) {
-				ba = new ByteArray();
-				data.readBytes(ba, 0, BoxInfo.SIZE_AND_TYPE_LENGTH);
-
-				size = ba.readUnsignedInt(); // BoxInfo.FIELD_SIZE_LENGTH
-				type = ba.readUTFBytes(BoxInfo.FIELD_TYPE_LENGTH);
-
-				boxData = new ByteArray();
-				data.readBytes(boxData, 0, size - BoxInfo.SIZE_AND_TYPE_LENGTH);
-
-				switch (type) {
-					case BOX_TYPE_VMHD:
-						vmhd = new VmhdBox(size, boxData);
-						break;
-					case BOX_TYPE_DINF:
-						dinf = new DinfBox(size, boxData);
-						break;
-					case BOX_TYPE_STBL:
-						stbl = new StblBox(size, boxData);
-						break;
-				}
-			}
-
-			// reset
-			data.position = 0;
 		}
 
 		//----------------------------------------

@@ -23,15 +23,8 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 		
 		public var baseURL:String;
-		public var id:String;
-		
 		public var mimeType:String;
-		
-		/**
-		 * "video" or "audio"
-		 * <p>Use <code>isVideo()</code> and <code>isAudio()</code> to determine content type.</p> 
-		 */		
-		public var contentType:String;
+		public var contentComponents:Vector.<ContentComponent>;
 		
 		/**
 		 * The set of bitrate renditions. 
@@ -39,31 +32,40 @@ package net.digitalprimates.dash.valueObjects
 		public var medias:Vector.<Representation>;
 		
 		public function get isVideo():Boolean {
-			// check contentType first
-			if (contentType != null && contentType.length > 0) {
-				return (contentType == CONTENT_TYPE_VIDEO);
+			if (contentComponents) {
+				for each (var cc:ContentComponent in contentComponents) {
+					if (cc.contentType == CONTENT_TYPE_VIDEO) {
+						return true;
+					}
+				}
 			}
-			// next check mimeType
-			else if (mimeType != null && mimeType.length > 0) {
+			
+			if (mimeType != null && mimeType.length > 0) {
 				return (mimeType.indexOf(CONTENT_TYPE_VIDEO) != -1);
 			}
-			else {
-				return false;
-			}
+			
+			return false;
 		}
 		
 		public function get isAudio():Boolean {
-			// check contentType first
-			if (contentType != null && contentType.length > 0) {
-				return (contentType == CONTENT_TYPE_AUDIO);
+			// if the stream also has video, we'll use it as the video track
+			// the audio will be baked in
+			if (isVideo)
+				return false;
+			
+			if (contentComponents) {
+				for each (var cc:ContentComponent in contentComponents) {
+					if (cc.contentType == CONTENT_TYPE_AUDIO) {
+						return true;
+					}
+				}
 			}
-				// next check mimeType
-			else if (mimeType != null && mimeType.length > 0) {
+			
+			if (mimeType != null && mimeType.length > 0) {
 				return (mimeType.indexOf(CONTENT_TYPE_AUDIO) != -1);
 			}
-			else {
-				return false;
-			}
+			
+			return false;
 		}
 	}
 }

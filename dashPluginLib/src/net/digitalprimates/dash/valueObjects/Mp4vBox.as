@@ -155,14 +155,14 @@ package net.digitalprimates.dash.valueObjects
 			_colorTableIndex = value;
 		}
 		
-		private var _avcc:AvccBox;
+		private var _avcC:AvccBox;
 
-		public function get avcc():AvccBox {
-			return _avcc;
+		public function get avcC():AvccBox {
+			return _avcC;
 		}
 
-		public function set avcc(value:AvccBox):void {
-			_avcc = value;
+		public function set avcC(value:AvccBox):void {
+			_avcC = value;
 		}
 		
 		//----------------------------------------
@@ -172,49 +172,29 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			data.position += 6;
+			bitStream.position += 6;
 
-			dataReferenceIndex = data.readUnsignedShort();
-			version = data.readUnsignedShort();
-			revision = data.readUnsignedShort();
-			vendor = data.readUnsignedInt();
-			temporalQuality = data.readUnsignedInt();
-			spatialQuality = data.readUnsignedInt();
-			width = data.readUnsignedShort();
-			height = data.readUnsignedShort();
-			horizRes = data.readUnsignedShort();
-			data.readUnsignedShort(); // TODO : This is a uint32 read in gpac, but to get the right value I have to read two shorts and toss the second one.
-			vertRes = data.readUnsignedShort();
-			data.readUnsignedShort(); // TODO : This is a uint32 read in gpac, but to get the right value I have to read two shorts and toss the second one.
-			entryDataSize = data.readUnsignedInt();
-			framesPerSample = data.readUnsignedShort();
-			compressorName = data.readUTFBytes(32);
-			bitDepth = data.readUnsignedShort();
-			colorTableIndex = data.readUnsignedShort();
+			dataReferenceIndex = bitStream.readUInt16();
+			version = bitStream.readUInt16();
+			revision = bitStream.readUInt16();
+			vendor = bitStream.readUInt32();
+			temporalQuality = bitStream.readUInt32();
+			spatialQuality = bitStream.readUInt32();
+			width = bitStream.readUInt16();
+			height = bitStream.readUInt16();
+			horizRes = bitStream.readUInt16();
+			bitStream.readUInt16(); // TODO : This is a uint32 read in gpac, but to get the right value I have to read two shorts and toss the second one.
+			vertRes = bitStream.readUInt16();
+			bitStream.readUInt16(); // TODO : This is a uint32 read in gpac, but to get the right value I have to read two shorts and toss the second one.
+			entryDataSize = bitStream.readUInt32();
+			framesPerSample = bitStream.readUInt16();
+			compressorName = bitStream.readUTFBytes(32);
+			bitDepth = bitStream.readUInt16();
+			colorTableIndex = bitStream.readUInt16();
 
-			var ba:ByteArray;
-			var size:int;
-			var type:String;
-			var boxData:ByteArray;
-
-			while (data.bytesAvailable > SIZE_AND_TYPE_LENGTH) {
-				ba = new ByteArray();
-				data.readBytes(ba, 0, BoxInfo.SIZE_AND_TYPE_LENGTH);
-
-				size = ba.readUnsignedInt(); // BoxInfo.FIELD_SIZE_LENGTH
-				type = ba.readUTFBytes(BoxInfo.FIELD_TYPE_LENGTH);
-
-				boxData = new ByteArray();
-				data.readBytes(boxData, 0, size - BoxInfo.SIZE_AND_TYPE_LENGTH);
-
-				switch (type) {
-					case BOX_TYPE_AVCC:
-						avcc = new AvccBox(size, boxData);
-						break;
-				}
-			}
-
-			data.position = 0;
+			parseChildrenBoxes();
+			
+			bitStream.position = 0;
 		}
 
 		//----------------------------------------

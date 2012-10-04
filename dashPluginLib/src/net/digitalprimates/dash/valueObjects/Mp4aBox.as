@@ -15,14 +15,14 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 
-		private var _dataReferenceIndex:int;
+		private var _bitStreamReferenceIndex:int;
 
-		public function get dataReferenceIndex():int {
-			return _dataReferenceIndex;
+		public function get bitStreamReferenceIndex():int {
+			return _bitStreamReferenceIndex;
 		}
 
-		public function set dataReferenceIndex(value:int):void {
-			_dataReferenceIndex = value;
+		public function set bitStreamReferenceIndex(value:int):void {
+			_bitStreamReferenceIndex = value;
 		}
 
 		private var _revision:int;
@@ -122,49 +122,29 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			data.position += 6;
+			bitStream.position += 6;
 
-			dataReferenceIndex = data.readUnsignedShort();
-			version = data.readUnsignedShort();
-			revision = data.readUnsignedShort();
-			vendor = data.readUnsignedInt();
-			channelCount = data.readUnsignedShort();
-			bitsPerSample = data.readUnsignedShort();
-			compressionId = data.readUnsignedShort();
-			packetSize = data.readUnsignedShort();
-			sampleRateHi = data.readUnsignedShort();
-			sampleRateLo = data.readUnsignedShort();
+			bitStreamReferenceIndex = bitStream.readUInt16();
+			version = bitStream.readUInt16();
+			revision = bitStream.readUInt16();
+			vendor = bitStream.readUInt32();
+			channelCount = bitStream.readUInt16();
+			bitsPerSample = bitStream.readUInt16();
+			compressionId = bitStream.readUInt16();
+			packetSize = bitStream.readUInt16();
+			sampleRateHi = bitStream.readUInt16();
+			sampleRateLo = bitStream.readUInt16();
 
 			if (version == 1) {
-				data.position += 16;
+				bitStream.position += 16;
 			}
 			else if (version == 2) {
-				data.position += 36;
+				bitStream.position += 36;
 			}
-
-			var ba:ByteArray;
-			var size:int;
-			var type:String;
-			var boxData:ByteArray;
-
-			while (data.bytesAvailable > SIZE_AND_TYPE_LENGTH) {
-				ba = new ByteArray();
-				data.readBytes(ba, 0, BoxInfo.SIZE_AND_TYPE_LENGTH);
-
-				size = ba.readUnsignedInt(); // BoxInfo.FIELD_SIZE_LENGTH
-				type = ba.readUTFBytes(BoxInfo.FIELD_TYPE_LENGTH);
-
-				boxData = new ByteArray();
-				data.readBytes(boxData, 0, size - BoxInfo.SIZE_AND_TYPE_LENGTH);
-
-				switch (type) {
-					case BOX_TYPE_ESDS:
-						esds = new EsdsBox(size, boxData);
-						break;
-				}
-			}
-
-			data.position = 0;
+			
+			parseChildrenBoxes();
+			
+			bitStream.position = 0;
 		}
 
 		//----------------------------------------
@@ -173,8 +153,8 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 
-		public function Mp4aBox(size:int, type:String, data:ByteArray = null) {
-			super(size, type, data);
+		public function Mp4aBox(size:int, type:String, bitStream:ByteArray = null) {
+			super(size, type, bitStream);
 		}
 	}
 }

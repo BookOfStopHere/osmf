@@ -72,15 +72,15 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			readFullBox(bitStream, this);
+			parseVersionAndFlags();
 
-			trackID = data.readUnsignedInt();
-			defSampleDescIndex = data.readUnsignedInt();
-			defSampleDuration = data.readUnsignedInt();
-			defSampleSize = data.readUnsignedInt();
-			defSampleFlags = data.readUnsignedInt();
+			trackID = bitStream.readUInt32();
+			defSampleDescIndex = bitStream.readUInt32();
+			defSampleDuration = bitStream.readUInt32();
+			defSampleSize = bitStream.readUInt32();
+			defSampleFlags = bitStream.readUInt32();
 
-			data.position = 0;
+			bitStream.position = 0;
 		}
 
 		//----------------------------------------

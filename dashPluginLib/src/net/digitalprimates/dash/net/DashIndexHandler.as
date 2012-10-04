@@ -96,15 +96,17 @@ package net.digitalprimates.dash.net
 			// see if we get a request because of a quality change
 			segmentRequest = processQualityChange(quality);
 			
+			var fragmentDuration:Number = 0;
+			
 			// if not, calculate which segment to load
 			if (!segmentRequest) {
 				var index:int = -1;
-				var fragmentDuration:Number;
 				var fragmentTime:Number;
 				
 				if (media.segmentTemplate && media.segmentTemplate.timeline) {
 					index = getIndexForTimeFromTemplate(time, media.segmentTemplate);
 					fragmentTime = getTimeForIndexFromTemplate(index, media.segmentTemplate);
+					fragmentDuration = getDurationForIndexFromTemplate(index, media.segmentTemplate);
 				}
 				// just use the segmentDuration value to figure out the index
 				else {
@@ -149,6 +151,8 @@ package net.digitalprimates.dash.net
 			// see if we get a request because of a quality change
 			segmentRequest = processQualityChange(quality);
 			
+			var fragmentDuration:Number = 0;
+			
 			// if not, use the segment cursor
 			if (!segmentRequest) {
 				currentSegmentIndex++;
@@ -162,6 +166,7 @@ package net.digitalprimates.dash.net
 				if (media.segments) {
 					var segment:Segment = media.segments[currentSegmentIndex];
 					segmentRequest = getRequestForSegment(segment, media);
+					fragmentDuration = media.segmentDuration / media.segmentTimescale;
 				}
 				else if (media.segmentTemplate) {
 					var fragmentTime:Number = -1;
@@ -169,6 +174,8 @@ package net.digitalprimates.dash.net
 					if (media.segmentTemplate && media.segmentTemplate.timeline) {
 						fragmentTime = getTimeForIndexFromTemplate(currentSegmentIndex, media.segmentTemplate);
 					}
+					
+					fragmentDuration = getDurationForIndexFromTemplate(currentSegmentIndex, media.segmentTemplate);
 					
 					var absoluteIdx:int = currentSegmentIndex + media.segmentTemplate.startNumber;
 					segmentRequest = getRequestForTemplate(absoluteIdx, media.segmentTemplate, media, fragmentTime);
@@ -179,7 +186,7 @@ package net.digitalprimates.dash.net
 			}
 			
 			Log.log(segmentRequest.url);
-			notifyFragmentDuration(media.segmentDuration / media.segmentTimescale);
+			notifyFragmentDuration(fragmentDuration);
 			return segmentRequest;
 		}
 		
@@ -256,6 +263,9 @@ package net.digitalprimates.dash.net
 			if (!template || !template.timeline || !template.timeline.fragments || template.timeline.fragments.length == 0)
 				throw new Error("Missing template information.");
 			
+			// TODO : Create a map for indexes to TimelineFragments....
+			// Need some sort of map because of repeat values.
+			
 			var timeline:Vector.<TimelineFragment> = template.timeline.fragments;
 			
 			var time:Number = timeline[0].time;
@@ -280,6 +290,32 @@ package net.digitalprimates.dash.net
 			}
 			
 			return time;
+		}
+		
+		private function getDurationForIndexFromTemplate(index:int, template:SegmentTemplate):Number {
+			if (template.duration != 0) {
+				return template.duration / template.timescale;
+			}
+			else {
+				if (!template || !template.timeline || !template.timeline.fragments || template.timeline.fragments.length == 0)
+					throw new Error("Missing template information.");
+				
+				var timeline:Vector.<TimelineFragment> = template.timeline.fragments;
+				
+				var count:int = 0;
+				var k:int = 0;
+				
+				while (true) {
+					count += timeline[k].repeat;
+					if (count >= index)
+						return timeline[k].duration;
+					
+					count++;
+					k++;
+				}
+			}
+			
+			return NaN;
 		}
 		
 		protected function processQualityChange(quality:int):HTTPStreamRequest {

@@ -11,6 +11,26 @@ package net.digitalprimates.dash.valueObjects
 	{
 		//----------------------------------------
 		//
+		// Properties
+		//
+		//----------------------------------------
+		
+		public function get sampleData():ByteArray {
+			return existingData;
+		}
+		
+		//----------------------------------------
+		//
+		// Internal Methods
+		//
+		//----------------------------------------
+		
+		override protected function parse():void {
+			
+		}
+		
+		//----------------------------------------
+		//
 		// Constructor
 		//
 		//----------------------------------------

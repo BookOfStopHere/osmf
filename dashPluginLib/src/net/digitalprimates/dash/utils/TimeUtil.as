@@ -34,7 +34,13 @@ package net.digitalprimates.dash.utils
 			var minutes:Number = extractNumber(time, MINUTE_PATTERN);
 			
 			var seconds:Number = extractNumber(time, SECOND_PATTERN);
-			seconds = extractNumber(time, SECOND_PATTERN2); // TODO : Multiple formats, how to know?!?!
+			
+			// two possible patterms
+			// PT0.0S
+			// PT0S
+			if (seconds == 0) {
+				seconds = extractNumber(time, SECOND_PATTERN2);
+			}
 
 			return (hours * 60 * 60) + (minutes * 60) + seconds;
 		}

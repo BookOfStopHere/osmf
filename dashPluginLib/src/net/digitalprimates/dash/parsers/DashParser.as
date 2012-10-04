@@ -6,6 +6,7 @@ package net.digitalprimates.dash.parsers
 	import net.digitalprimates.dash.DashManifest;
 	import net.digitalprimates.dash.utils.TimeUtil;
 	import net.digitalprimates.dash.valueObjects.AdaptationSet;
+	import net.digitalprimates.dash.valueObjects.ContentComponent;
 	import net.digitalprimates.dash.valueObjects.Representation;
 	import net.digitalprimates.dash.valueObjects.Segment;
 	import net.digitalprimates.dash.valueObjects.SegmentTemplate;
@@ -14,6 +15,7 @@ package net.digitalprimates.dash.parsers
 	
 	import org.osmf.events.ParseEvent;
 	import org.osmf.net.StreamType;
+	import org.osmf.utils.URL;
 
 	/**
 	 *
@@ -62,7 +64,7 @@ package net.digitalprimates.dash.parsers
 				// TODO : Assume only one period for now...
 				var period:XML = xml.internal_namespace::Period[0];
 				var items:XMLList = period..internal_namespace::AdaptationSet;
-				manifest.adaptations = parseAdaptationSets(items, baseURL);
+				manifest.adaptations = parseAdaptationSets(items, manifest.baseURL);
 				
 				finishLoad();
 			}
@@ -76,6 +78,16 @@ package net.digitalprimates.dash.parsers
 		// Internal Methods
 		//
 		//----------------------------------------
+		
+		private function trimURL(url:String):String {
+			// trim off url parameters
+			var paramIdx:int = url.indexOf("?");
+			if (paramIdx != -1) {
+				return url.substring(0, paramIdx);
+			}
+			
+			return url;
+		}
 		
 		/**
 		 * Parses the top level manifest items.
@@ -92,7 +104,16 @@ package net.digitalprimates.dash.parsers
 			
 			man.minBufferTime = TimeUtil.convertTimeToSeconds(value.@minBufferTime);
 			man.duration = TimeUtil.convertTimeToSeconds(value.@mediaPresentationDuration);
-			man.baseURL = baseURL;
+			
+			man.baseURL = (value.internal_namespace::BaseURL.length() > 0) ? value.internal_namespace::BaseURL[0].toString() : baseURL;
+			
+			var absoluteBase:Boolean = (man.baseURL.indexOf("http://") != -1);
+			if (!absoluteBase) {
+				var url:URL = new URL(baseURL);
+				man.baseURL = url.protocol + "://" + url.host + man.baseURL;
+			}
+			
+			man.baseURL = trimURL(man.baseURL);
 			
 			return man;
 		}
@@ -110,13 +131,22 @@ package net.digitalprimates.dash.parsers
 			
 			for each (var xml:XML in items) {
 				item = new AdaptationSet();
+				
 				item.baseURL = (xml.internal_namespace::BaseURL.length() > 0) ? xml.internal_namespace::BaseURL[0].toString() : baseURL;
+				item.baseURL = trimURL(item.baseURL);
+				
 				item.mimeType = xml.@mimeType;
 				
 				// get contentType from one level in
 				if (xml.internal_namespace::ContentComponent.length() > 0) {
-					item.id = xml.internal_namespace::ContentComponent[0].@id;
-					item.contentType = xml.internal_namespace::ContentComponent[0].@contentType;
+					item.contentComponents = new Vector.<ContentComponent>();
+					for each (var x:XML in xml.internal_namespace::ContentComponent) {
+						var cc:ContentComponent = new ContentComponent();
+						cc.id = xml.internal_namespace::ContentComponent[0].@id;
+						cc.contentType = xml.internal_namespace::ContentComponent[0].@contentType;
+						cc.lang = xml.internal_namespace::ContentComponent[0].@lang;
+						item.contentComponents.push(cc);
+					}
 				}
 				
 				if (xml.internal_namespace::SegmentTemplate.length() > 0) {
@@ -152,7 +182,10 @@ package net.digitalprimates.dash.parsers
 			
 			for each (var xml:XML in items) {
 				item = new Representation();
+				
 				item.baseURL = (xml.internal_namespace::BaseURL.length() > 0) ? xml.internal_namespace::BaseURL[0].toString() : baseURL;
+				item.baseURL = trimURL(item.baseURL);
+				
 				item.id = xml.@id;
 				item.mimeType = xml.@mimeType;
 				if (item.mimeType == null || item.mimeType.length == 0) {

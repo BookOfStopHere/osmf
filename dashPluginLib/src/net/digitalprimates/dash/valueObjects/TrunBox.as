@@ -38,20 +38,25 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 		
 		public var sampleCount:int;
+		public var currentSample:int = 0;
 		public var dataOffset:int;
 		public var firstSampleFlags:int;
 		public var samples:Vector.<Sample>;
 
+		private var _initialized:Boolean = false;
+		
+		public function get initialized():Boolean {
+			return _initialized;
+		}
+		
 		//----------------------------------------
 		//
 		// Variables
 		//
 		//----------------------------------------
 		
-		private var currentSample:int = 0;
 		private var configTag:FLVTag;
 		private var decodeTime:Number;
-		private var initialized:Boolean = false;
 		
 		//----------------------------------------
 		//
@@ -69,16 +74,7 @@ package net.digitalprimates.dash.valueObjects
 			this.decodeTime = decodeTime;
 			this.configTag = configTag;
 			currentSample = 0;
-			initialized = true;
-		}
-		
-		/**
-		 * Whether or not we are in the process of reading tags.
-		 *  
-		 * @return 
-		 */		
-		public function isProcessing():Boolean {
-			return initialized;
+			_initialized = true;
 		}
 		
 		/**
@@ -177,10 +173,6 @@ package net.digitalprimates.dash.valueObjects
 			
 			currentSample++;
 			
-			// we are done, don't let this method get called again
-			if (currentSample >= sampleCount)
-				initialized = false;
-			
 			return tag;
 		}
 		
@@ -191,17 +183,17 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 		
 		override protected function parse():void {
-			readFullBox(bitStream, this);
+			parseVersionAndFlags();
 			
-			sampleCount = data.readInt();
+			sampleCount = bitStream.readUInt32();
 			
 			var hasFirstSampleFlags:Boolean = false;
 			
 			if (flags & GF_ISOM_TRUN_DATA_OFFSET) {
-				dataOffset = data.readInt();
+				dataOffset = bitStream.readUInt32();
 			}
 			if (flags & GF_ISOM_TRUN_FIRST_FLAG) {
-				firstSampleFlags = data.readInt();
+				firstSampleFlags = bitStream.readUInt32();
 				hasFirstSampleFlags = true;
 			}
 			
@@ -210,11 +202,11 @@ package net.digitalprimates.dash.valueObjects
 				var p:Sample = new Sample();
 				
 				if (flags & GF_ISOM_TRUN_DURATION) {
-					p.duration = data.readInt();
+					p.duration = bitStream.readUInt32();
 				}
 				
 				if (flags & GF_ISOM_TRUN_SIZE) {
-					p.size = data.readInt();
+					p.size = bitStream.readUInt32();
 				}
 				
 				if (flags & GF_ISOM_FIRST_SAMPLE_FLAGS) {
@@ -223,18 +215,18 @@ package net.digitalprimates.dash.valueObjects
 				
 				if (!hasFirstSampleFlags) {
 					if (flags & GF_ISOM_TRUN_FLAGS) {
-						p.flags = data.readInt();
+						p.flags = bitStream.readUInt32();
 					}
 				}
 				
 				if (flags & GF_ISOM_TRUN_CTS_OFFSET) {
-					p.CTSOffset = data.readInt();
+					p.CTSOffset = bitStream.readUInt32();
 				}
 				
 				samples.push(p);
 			}	
 			
-			data.position = 0;
+			bitStream.position = 0;
 		}
 		
 		//----------------------------------------

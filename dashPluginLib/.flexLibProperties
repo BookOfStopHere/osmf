@@ -47,6 +47,12 @@
     <classEntry path="net.digitalprimates.dash.valueObjects.SegmentTimeline"/>
     <classEntry path="net.digitalprimates.dash.valueObjects.TimelineFragment"/>
     <classEntry path="net.digitalprimates.dash.traits.DashBufferTrait"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.ContentComponent"/>
+    <classEntry path="net.digitalprimates.dash.utils.IDescriptorFactory"/>
+    <classEntry path="net.digitalprimates.dash.utils.BaseDescriptorFactory"/>
+    <classEntry path="net.digitalprimates.dash.utils.IBoxFactory"/>
+    <classEntry path="net.digitalprimates.dash.utils.BaseBoxFactory"/>
+    <classEntry path="net.digitalprimates.dash.valueObjects.ParentBox"/>
   </includeClasses>
   <includeResources/>
   <namespaceManifests/>

@@ -242,44 +242,44 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			readFullBox(bitStream, this);
+			parseVersionAndFlags();
 
 			if (version == 1) {
-				creationTime = data.readDouble();
-				modificationTime = data.readDouble();
-				timescale = data.readUnsignedInt();
-				duration = data.readDouble();
+				creationTime = bitStream.readUInt64();
+				modificationTime = bitStream.readUInt64();
+				timescale = bitStream.readUInt32();
+				duration = bitStream.readUInt64();
 			}
 			else {
-				creationTime = data.readUnsignedInt();
-				modificationTime = data.readUnsignedInt();
-				timescale = data.readUnsignedInt();
-				duration = data.readUnsignedInt();
+				creationTime = bitStream.readUInt32();
+				modificationTime = bitStream.readUInt32();
+				timescale = bitStream.readUInt32();
+				duration = bitStream.readUInt32();
 			}
 
-			preferredRate = data.readUnsignedInt();
-			preferredVolume = data.readUnsignedShort();
+			preferredRate = bitStream.readUInt32();
+			preferredVolume = bitStream.readUInt16();
 
-			data.position += 10; // reserved
+			bitStream.position += 10; // reserved
 
-			matrixA = data.readUnsignedInt();
-			matrixB = data.readUnsignedInt();
-			matrixU = data.readUnsignedInt();
-			matrixC = data.readUnsignedInt();
-			matrixD = data.readUnsignedInt();
-			matrixV = data.readUnsignedInt();
-			matrixX = data.readUnsignedInt();
-			matrixY = data.readUnsignedInt();
-			matrixW = data.readUnsignedInt();
-			previewTime = data.readUnsignedInt();
-			previewDuration = data.readUnsignedInt();
-			posterTime = data.readUnsignedInt();
-			selectionTime = data.readUnsignedInt();
-			selectionDuration = data.readUnsignedInt();
-			currentTime = data.readUnsignedInt();
-			nextTrackID = data.readUnsignedInt();
+			matrixA = bitStream.readUInt32();
+			matrixB = bitStream.readUInt32();
+			matrixU = bitStream.readUInt32();
+			matrixC = bitStream.readUInt32();
+			matrixD = bitStream.readUInt32();
+			matrixV = bitStream.readUInt32();
+			matrixX = bitStream.readUInt32();
+			matrixY = bitStream.readUInt32();
+			matrixW = bitStream.readUInt32();
+			previewTime = bitStream.readUInt32();
+			previewDuration = bitStream.readUInt32();
+			posterTime = bitStream.readUInt32();
+			selectionTime = bitStream.readUInt32();
+			selectionDuration = bitStream.readUInt32();
+			currentTime = bitStream.readUInt32();
+			nextTrackID = bitStream.readUInt32();
 
-			data.position = 0;
+			bitStream.position = 0;
 		}
 
 		//----------------------------------------

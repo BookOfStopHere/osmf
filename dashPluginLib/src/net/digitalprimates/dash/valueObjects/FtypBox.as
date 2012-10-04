@@ -52,15 +52,15 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			majorBrand = data.readUTFBytes(4);
-			minorBrand = data.readUnsignedInt();
+			majorBrand = bitStream.readUTFBytes(4);
+			minorBrand = bitStream.readUInt32();
 			
 			compatibleBrands = new Vector.<String>();
-			while (data.bytesAvailable > 0) {
-				compatibleBrands.push(data.readUTFBytes(4));
+			while (bitStream.bytesAvailable > 0) {
+				compatibleBrands.push(bitStream.readUTFBytes(4));
 			}
 
-			data.position = 0;
+			bitStream.position = 0;
 		}
 
 		//----------------------------------------

@@ -34,15 +34,15 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			readFullBox(bitStream, this);
+			parseVersionAndFlags();
 
-			data.readUnsignedInt(); // reserved
-			handlerType = data.readUTFBytes(4);
+			bitStream.readUInt32(); // reserved
+			handlerType = bitStream.readUTFBytes(4);
 			
-			data.readUTFBytes(12); // reserved
-			name = data.readUTFBytes(data.bytesAvailable);
+			bitStream.readUTFBytes(12); // reserved
+			name = bitStream.readUTFBytes(bitStream.bytesAvailable);
 			
-			data.position = 0;
+			bitStream.position = 0;
 		}
 
 		//----------------------------------------

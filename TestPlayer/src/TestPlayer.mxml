@@ -9,8 +9,6 @@
 	
 	<fx:Script>
 		<![CDATA[
-			import flash.utils.setTimeout;
-			
 			import mx.collections.IList;
 			import mx.events.CloseEvent;
 			import mx.events.FlexEvent;
@@ -22,8 +20,6 @@
 			
 			import org.osmf.containers.MediaContainer;
 			import org.osmf.events.BufferEvent;
-			import org.osmf.events.MediaElementEvent;
-			import org.osmf.events.MediaErrorEvent;
 			import org.osmf.events.PlayEvent;
 			import org.osmf.events.SeekEvent;
 			import org.osmf.events.TimeEvent;
@@ -239,6 +235,15 @@
 				scrubber.maximum = duration;
 			}
 			
+			private function onPlayChange(event:Event):void {
+				if (player.paused) {
+					player.play();
+				}
+				else {
+					player.pause();
+				}
+			}
+			
 			private function onScrubberChangeStart(event:FlexEvent):void {
 				scrubbing = true;
 			}
@@ -297,7 +302,8 @@
 			
 			<s:ToggleButton
 				id="playPause"
-				skinClass="spark.skins.spark.mediaClasses.normal.PlayPauseButtonSkin"/>
+				skinClass="spark.skins.spark.mediaClasses.normal.PlayPauseButtonSkin"
+				change="onPlayChange(event)"/>
 			
 			<s:ScrubBar
 				id="scrubber"
@@ -311,13 +317,13 @@
 			
 			<s:Spacer width="5"/>
 			
-			<s:MuteButton
+			<!--<s:MuteButton
 				id="volume"
-				skinClass="spark.skins.spark.mediaClasses.normal.MuteButtonSkin"/>
+				skinClass="spark.skins.spark.mediaClasses.normal.MuteButtonSkin"/>-->
 			
-			<s:ToggleButton
+			<!--<s:ToggleButton
 				id="fullscreen"
-				skinClass="spark.skins.spark.mediaClasses.normal.FullScreenButtonSkin"/>
+				skinClass="spark.skins.spark.mediaClasses.normal.FullScreenButtonSkin"/>-->
 			
 		</s:HGroup>
 		

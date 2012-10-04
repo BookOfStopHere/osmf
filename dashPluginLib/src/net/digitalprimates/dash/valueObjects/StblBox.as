@@ -7,7 +7,7 @@ package net.digitalprimates.dash.valueObjects
 	 *
 	 * @author Nathan Weber
 	 */
-	public class StblBox extends BoxInfo
+	public class StblBox extends ParentBox
 	{
 		//----------------------------------------
 		//
@@ -25,13 +25,13 @@ package net.digitalprimates.dash.valueObjects
 			_stsd = value;
 		}
 
-		private var _stts:SttsBox;
+		private var _stts:BoxInfo;
 
-		public function get stts():SttsBox {
+		public function get stts():BoxInfo {
 			return _stts;
 		}
 
-		public function set stts(value:SttsBox):void {
+		public function set stts(value:BoxInfo):void {
 			_stts = value;
 		}
 
@@ -45,80 +45,24 @@ package net.digitalprimates.dash.valueObjects
 			_stsc = value;
 		}
 
-		private var _stsz:StszBox;
+		private var _stsz:BoxInfo;
 
-		public function get stsz():StszBox {
+		public function get stsz():BoxInfo {
 			return _stsz;
 		}
 
-		public function set stsz(value:StszBox):void {
+		public function set stsz(value:BoxInfo):void {
 			_stsz = value;
 		}
 
-		private var _stco:StcoBox;
+		private var _stco:BoxInfo;
 
-		public function get stco():StcoBox {
+		public function get stco():BoxInfo {
 			return _stco;
 		}
 
-		public function set stco(value:StcoBox):void {
+		public function set stco(value:BoxInfo):void {
 			_stco = value;
-		}
-
-		//----------------------------------------
-		//
-		// Internal Methods
-		//
-		//----------------------------------------
-
-		override protected function parse():void {
-			/*
-			stbl				sample table box, container for the time/space map
-				stsd			sample descriptions (codec types, initialization etc.)
-					avc1
-						avcC
-				stts			(decoding) time-to-sample
-				stsc			sample-to-chunk, partial data-offset information
-				stsz			sample sizes (framing)
-				stco			chunk offset, partial data-offset information
-			*/
-
-			var ba:ByteArray;
-			var size:int;
-			var type:String;
-			var boxData:ByteArray;
-
-			while (data.bytesAvailable > SIZE_AND_TYPE_LENGTH) {
-				ba = new ByteArray();
-				data.readBytes(ba, 0, BoxInfo.SIZE_AND_TYPE_LENGTH);
-
-				size = ba.readUnsignedInt(); // BoxInfo.FIELD_SIZE_LENGTH
-				type = ba.readUTFBytes(BoxInfo.FIELD_TYPE_LENGTH);
-
-				boxData = new ByteArray();
-				data.readBytes(boxData, 0, size - BoxInfo.SIZE_AND_TYPE_LENGTH);
-
-				switch (type) {
-					case BOX_TYPE_STSD:
-						stsd = new StsdBox(size, boxData);
-						break;
-					case BOX_TYPE_STTS:
-						stts = new SttsBox(size, boxData);
-						break;
-					case BOX_TYPE_STSC:
-						stsc = new StscBox(size, boxData);
-						break;
-					case BOX_TYPE_STSZ:
-						stsz = new StszBox(size, boxData);
-						break;
-					case BOX_TYPE_STCO:
-						stco = new StcoBox(size, boxData);
-						break;
-				}
-			}
-
-			// reset
-			data.position = 0;
 		}
 
 		//----------------------------------------

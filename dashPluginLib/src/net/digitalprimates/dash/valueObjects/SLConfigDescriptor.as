@@ -1,10 +1,8 @@
 package net.digitalprimates.dash.valueObjects
 {
-	import flash.utils.ByteArray;
-
 	/**
-	 * 
-	 * 
+	 *
+	 *
 	 * @author Nathan Weber
 	 */
 	public class SLConfigDescriptor extends Descriptor
@@ -14,39 +12,38 @@ package net.digitalprimates.dash.valueObjects
 		// Properties
 		//
 		//----------------------------------------
-		
-		private var _configData:ByteArray;
-		
-		public function get configData():ByteArray {
-			return _configData;
+
+		private var _predefined:int;
+
+		public function get predefined():int {
+			return _predefined;
 		}
-		
-		public function set configData(value:ByteArray):void {
-			_configData = value;
+
+		public function set predefined(value:int):void {
+			_predefined = value;
 		}
-		
+
 		//----------------------------------------
 		//
 		// Internal Methods
 		//
 		//----------------------------------------
-		
+
 		override protected function parse():void {
-			if (data && data.bytesAvailable > 0) {
+			if (bitStream && bitStream.bytesAvailable > 0) {
 				super.parse();
-				
-				configData = new ByteArray();
-				data.readBytes(configData, 0, size);
+
+				predefined = bitStream.readUInt8();
 			}
 		}
-		
+
 		//----------------------------------------
 		//
 		// Constructor
 		//
 		//----------------------------------------
-		
-		public function SLConfigDescriptor(data:ByteArray = null) {
+
+		public function SLConfigDescriptor(data:BitStream = null) {
 			super(data);
 		}
 	}

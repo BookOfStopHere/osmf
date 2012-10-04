@@ -3,6 +3,8 @@ package net.digitalprimates.dash.decoders
 	import flash.utils.ByteArray;
 	import flash.utils.IDataInput;
 	
+	import net.digitalprimates.dash.utils.BaseBoxFactory;
+	import net.digitalprimates.dash.utils.IBoxFactory;
 	import net.digitalprimates.dash.utils.Log;
 	import net.digitalprimates.dash.valueObjects.*;
 	
@@ -27,11 +29,18 @@ package net.digitalprimates.dash.decoders
 		private var bytes:ByteArray;
 		private var bytesPending:Boolean = false;
 		
-		private var initialized:Boolean = false;
-		private var timescale:Number;
-		private var headerVideoTag:FLVTagVideo;
-		private var headerAudioTag:FLVTagAudio;
+		private var currentMoov:MoovBox;
 		private var currentMoof:MoofBox;
+		
+		private var _boxFactory:IBoxFactory;
+		
+		protected function get boxFactory():IBoxFactory {
+			if (!_boxFactory) {
+				_boxFactory = new BaseBoxFactory();
+			}
+			
+			return _boxFactory;
+		}
 		
 		//----------------------------------------
 		//
@@ -44,7 +53,6 @@ package net.digitalprimates.dash.decoders
 		 */		
 		public function beginProcessData():void {
 			currentBox = null;
-			initialized = false;
 		}
 		
 		/**
@@ -109,7 +117,7 @@ package net.digitalprimates.dash.decoders
 				
 				if (currentBox != null) {
 					Log.log("parsed a box of type", currentBox.type);
-					if (currentBox.data != null) {
+					if (currentBox.ready) {
 						Log.log("box data ready");
 					}
 					else {
@@ -122,7 +130,7 @@ package net.digitalprimates.dash.decoders
 			}
 			
 			// have a box, but not the contents
-			if ((currentBox && currentBox.data == null) || bytesPending) {
+			if ((currentBox && !currentBox.ready) || bytesPending) {
 				var read:Boolean = readBoxData(currentBox, input, limit);
 				
 				if (read) {
@@ -134,52 +142,22 @@ package net.digitalprimates.dash.decoders
 			}
 			
 			// we have a full box, so handle it
-			if (currentBox && currentBox.data != null) {
+			if (currentBox && currentBox.ready) {
 				Log.log("trying to use box", currentBox.type);
 				switch (currentBox.type) {
 					case BoxInfo.BOX_TYPE_MOOV:
 						Log.log("got a MOOV box - parse header tags");
-						
 						/*
 						The moov box will be defined in the header file.
 						We need to read out the header data and save it so that we can write it out
 						to the NetStream later.
 						We also need to save the tags because they'll be referenced later when we
 						decode the video/audio frames.
+						The tags from here will be asked for later when we build the FLV bytes.
 						*/
-						
-						// get the timescale for later
-						var moov:MoovBox = currentBox as MoovBox;
-						var hdlr:HdlrBox = moov.trak.mdia.hdlr;
-						
-						timescale = moov.trak.mdia.mdhd.timeScale;
-						
-						// build the configuration tag for video
-						if (hdlr.handlerType == HdlrBox.HANDLER_TYPE_VIDEO) {
-							headerVideoTag = new FLVTagVideo();
-							headerVideoTag.codecID = FLVTagVideo.CODEC_ID_AVC;
-							headerVideoTag.frameType = FLVTagVideo.FRAME_TYPE_KEYFRAME;
-							headerVideoTag.avcPacketType = FLVTagVideo.AVC_PACKET_TYPE_SEQUENCE_HEADER;
-							
-							var avcc:AvccBox = moov.trak.mdia.minf.stbl.stsd.sampleEntries[0].avcc;
-							headerVideoTag.data = avcc.configRecord;
-						}
-						// build the configuration tag for audio
-						else if (hdlr.handlerType == HdlrBox.HANDLER_TYPE_AUDIO) {
-							var mp4a:Mp4aBox = (moov.trak.mdia.minf.stbl.stsd.sampleEntries[0] as Mp4aBox);
-							
-							headerAudioTag = new FLVTagAudio();
-							headerAudioTag.soundFormat = FLVTagAudio.SOUND_FORMAT_AAC;
-							headerAudioTag.soundChannels = mp4a.channelCount;
-							headerAudioTag.soundRate = FLVTagAudio.SOUND_RATE_44K; // mp4a.sampleRateHi;
-							headerAudioTag.soundSize = mp4a.bitsPerSample;
-							headerAudioTag.isAACSequenceHeader = true;
-							headerAudioTag.data = mp4a.esds.es.decoderConfigDescriptor.decoderSpecificInfo.configData;
-						}
-						// we don't know how to handle this
-						else {
-							throw new Error("Unkown handler type!");
-						}
+						// save this off for later, we'll need it when we build the stream fragments
+						currentMoov = currentBox as MoovBox;
+						clearCurrentBox();
 						break;
 					
 					case BoxInfo.BOX_TYPE_MOOF:
@@ -203,8 +181,19 @@ package net.digitalprimates.dash.decoders
 						See TrunBox for more information about how the frames are decoded.
 						*/
 						
-						// get the video data in FLV format
-						returnByteArray = getFLVBytes(currentBox.data);
+						// get the data in FLV format
+						// process each track in the moof
+						// we might have an audio and video track in the same moof
+						var mdatBox:MdatBox = (currentBox as MdatBox);
+						var mdatData:ByteArray = mdatBox.sampleData;
+						for each (var traf:TrafBox in currentMoof.tracks) {
+							var flv:ByteArray = getFLVBytes(mdatData, traf);
+							
+							if (flv) {
+								if (!returnByteArray) returnByteArray = new ByteArray();
+								returnByteArray.writeBytes(flv);
+							}
+						}
 						
 						// start over if the video fragment is done being loaded
 						// the box will contain a limited amount of data based on how
@@ -225,6 +214,11 @@ package net.digitalprimates.dash.decoders
 				}
 			}
 			
+			// reset the position to 0, otherwise HTTPStreamMixer will fail
+			if (returnByteArray) {
+				returnByteArray.position = 0;
+			}
+			
 			return returnByteArray;
 		}
 		
@@ -243,32 +237,7 @@ package net.digitalprimates.dash.decoders
 			if (input == null || input.bytesAvailable < BoxInfo.SIZE_AND_TYPE_LENGTH)
 				return null;
 			
-			var ba:ByteArray = new ByteArray();
-			input.readBytes(ba, 0, BoxInfo.SIZE_AND_TYPE_LENGTH);
-			
-			var size:int = ba.readUnsignedInt(); // BoxInfo.FIELD_SIZE_LENGTH
-			var type:String = ba.readUTFBytes(BoxInfo.FIELD_TYPE_LENGTH);
-			
-			var box:BoxInfo;
-			
-			switch (type) {
-				case BoxInfo.BOX_TYPE_FTYP:
-					box = new FtypBox(size);
-					break;
-				case BoxInfo.BOX_TYPE_MOOF:
-					box = new MoofBox(size);
-					break;
-				case BoxInfo.BOX_TYPE_MDAT:
-					box = new MdatBox(size);
-					break;
-				case BoxInfo.BOX_TYPE_MOOV:
-					box = new MoovBox(size);
-					break;
-				default:
-					box = new BoxInfo(size, type);
-					break;
-			}
-			
+			var box:BoxInfo = boxFactory.getInstance(input);
 			readBoxData(box, input, limit);
 			
 			return box;
@@ -277,9 +246,14 @@ package net.digitalprimates.dash.decoders
 		private function readBoxData(box:BoxInfo, input:IDataInput, limit:Number = 0):Boolean {
 			var bytesNeeded:int = (box.size - box.length);
 			
-			// mdat boxes will be processed as they download
-			// force the reading of the available data
-			var forced:Boolean = (box.type == BoxInfo.BOX_TYPE_MDAT);
+			// this forces the box to be processed as it is downloaded, even if the entire box isn't finished
+			// if false, the box won't be processed until the entire box is available
+			// for performance we may want to set this to true for MDAT (video data) boxes
+			// however, there's a bug that will cause mdats with multiple tracks to have the second track delayed
+			// the multiple tracks should play at the same time!
+			// leave as false for now..
+			// TODO : Measure effect on performace.
+			var forced:Boolean = false; //(box.type == BoxInfo.BOX_TYPE_MDAT);
 			
 			// not enough data
 			if ((input.bytesAvailable < bytesNeeded) && !forced)
@@ -305,13 +279,16 @@ package net.digitalprimates.dash.decoders
 			}
 			
 			// append to the box's data if it's already been created
-			if (box.data != null) {
+			if (box.ready) {
 				Log.log("appending to existing data");
-				data = box.data;
+				data = box.existingData;
 			}
 			else {
 				data = new ByteArray();
 			}
+			
+			if (numBytesToRead <= 0)
+				return false; // throw an error here?
 			
 			input.readBytes(data, data.length, numBytesToRead);
 			
@@ -321,63 +298,107 @@ package net.digitalprimates.dash.decoders
 		}
 		
 		private function get processingFLVBytesFinished():Boolean {
-			var trun:TrunBox = currentMoof.traf.trun;
-			return !trun.hasNext();
+			var trun:TrunBox;
+			var doneProcessing:Boolean;
+			var doneLoading:Boolean;
+			
+			for each (var traf:TrafBox in currentMoof.tracks) {
+				trun = traf.trun;
+				doneProcessing = !trun.hasNext();
+				doneLoading = (currentBox.length == currentBox.size);
+				
+				if (!doneProcessing || !doneLoading) {
+					return false;
+				}
+			}
+			
+			return true;
+		}
+		
+		private function getTrakForTraf(moov:MoovBox, traf:TrafBox):TrakBox {
+			if (!moov || !traf) {
+				return null;
+			}
+			
+			for each (var trak:TrakBox in moov.tracks) {
+				if (trak.tkhd.trackId == traf.tfhd.trackId) {
+					return trak;
+				}
+			}
+			
+			return null;
 		}
 		
 		/**
 		 * @private 
 		 * Returns the FLV data for an mdat.
 		 */		
-		private function getFLVBytes(bytes:ByteArray):ByteArray {
+		private function getFLVBytes(bytes:ByteArray, traf:TrafBox):ByteArray {
 			if (bytes) {
+				var trak:TrakBox = getTrakForTraf(currentMoov, traf);
+				if (!trak)
+					throw new Error("Missing track information!");
+				
 				var flvBytes:ByteArray = new ByteArray();
 				
 				// get some boxes we need
-				var tfdt:TfdtBox = currentMoof.traf.tfdt;
-				var trun:TrunBox = currentMoof.traf.trun;
-				var tfhd:TfhdBox = currentMoof.traf.tfhd;
+				var tfdt:TfdtBox = traf.tfdt;
+				var trun:TrunBox = traf.trun;
+				var tfhd:TfhdBox = traf.tfhd;
 				
 				// without these we don't have enough information to continue
 				// if these aren't here the video is probably malformed
 				if (!tfdt || !trun || !tfhd)
 					throw new Error("Missing video information!");
 				
+				// check to see if this track is already finished
+				if (!trun.hasNext())
+					return null;
+				
+				// the samples start at the position defined by the data offset
+				// be sure we have that data position loaded before we try processing
+				if (trun.currentSample == 0) {
+					var offset:Number = 0;
+					if (tfhd.baseDataOffset > 0) {
+						offset += tfhd.baseDataOffset;
+					}
+					if (trun.dataOffset > 0) {
+						offset += trun.dataOffset;
+					}
+					
+					// the data for THIS TRACK starts at offset
+					// be sure we've loaded to that point!
+					if (bytes.length < offset)
+						return null;
+				}
+				
+				// THIS IS WHERE WE STOPPED TALKING
+				
+				var configTag:FLVTag = trak.configTag;
+				var timescale:Number = trak.mdia.mdhd.timescale;
+				
+				if (!configTag) {
+					throw new Error("Missing config tag in track!");
+				}
+				
 				// if we haven't written the headers to NetStream, do that FIRST
-				if (!initialized) {
-					Log.log("init decoding", tfdt.baseMediaDecodeTime);
-					if (headerVideoTag) {
-						headerVideoTag.timestamp = tfdt.baseMediaDecodeTime / timescale * 1000;
-						headerVideoTag.write(flvBytes);
-						initialized = true;
+				if (!trun.initialized) {
+					if (configTag) {
+						configTag.timestamp = tfdt.baseMediaDecodeTime / timescale * 1000;
+						configTag.write(flvBytes);
 					}
-					else if (headerAudioTag) {
-						headerAudioTag.timestamp = tfdt.baseMediaDecodeTime / timescale * 1000;
-						headerAudioTag.write(flvBytes);
-					}
-					initialized = true;
+					
+					trun.startSampling(tfdt.baseMediaDecodeTime, configTag);
 				}
 				
-				// check to see if the trun has already started
-				// again, we only process so much each pass, so this may have already been kicked off
-				if (!trun.isProcessing()) {
-					if (headerVideoTag) {
-						trun.startSampling(tfdt.baseMediaDecodeTime, headerVideoTag);
-					}
-					else if (headerAudioTag) {
-						trun.startSampling(tfdt.baseMediaDecodeTime, headerAudioTag);
-					}
-					else {
-						throw new Error("Missing configuration tag.");
-					}
-				}
-				
+				Log.log("start processing tags", trun.currentSample, trun.sampleCount);
 				// check to see that we have more to process and that we have enough data to process the next tag
 				while (trun.hasNext() && trun.canReadNextTag(bytes)) {
 					// get the tag from the trun - let it do the heavy lifting - and then write it to the FLV byte array
 					var tag:FLVTag = trun.getNextTag(timescale, tfhd.defSampleDuration, tfhd.defSampleFlags, bytes);
 					tag.write(flvBytes);
 				}
+				Log.log("finish processing tags", trun.currentSample, trun.sampleCount);
 				
 				// reset this to be nice for somebody else that wants to use it
 				flvBytes.position = 0;

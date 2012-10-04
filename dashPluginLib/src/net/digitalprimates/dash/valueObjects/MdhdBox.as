@@ -35,14 +35,14 @@ package net.digitalprimates.dash.valueObjects
 			_modificationTime = value;
 		}
 
-		private var _timeScale:int;
+		private var _timescale:int;
 
-		public function get timeScale():int {
-			return _timeScale;
+		public function get timescale():int {
+			return _timescale;
 		}
 
-		public function set timeScale(value:int):void {
-			_timeScale = value;
+		public function set timescale(value:int):void {
+			_timescale = value;
 		}
 
 		private var _duration:Number;
@@ -82,42 +82,25 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			readFullBox(bitStream, this);
+			parseVersionAndFlags();
 
 			if (version == 1) {
-				creationTime = data.readDouble();
-				modificationTime = data.readDouble();
-				timeScale = data.readUnsignedInt();
-				duration = data.readDouble();
+				creationTime = bitStream.readUInt64();
+				modificationTime = bitStream.readUInt64();
+				timescale = bitStream.readUInt32();
+				duration = bitStream.readUInt64();
 			}
 			else {
-				creationTime = data.readUnsignedInt();
-				modificationTime = data.readUnsignedInt();
-				timeScale = data.readUnsignedInt();
-				duration = data.readUnsignedInt();
+				creationTime = bitStream.readUInt32();
+				modificationTime = bitStream.readUInt32();
+				timescale = bitStream.readUInt32();
+				duration = bitStream.readUInt32();
 			}
 
-			//our padding bit
-			BitStream.gf_bs_read_int(bitStream, 1);
+			language = bitStream.readIso639();
+			reserved = bitStream.readUInt16();
 			
-			//the spec is unclear here, just says "the value 0 is interpreted as undetermined"
-			var packedLanguage:Array = [];
-			packedLanguage[0] = String.fromCharCode(BitStream.gf_bs_read_int(bitStream, 5) + 0x60);
-			packedLanguage[1] = String.fromCharCode(BitStream.gf_bs_read_int(bitStream, 5) + 0x60);
-			packedLanguage[2] = String.fromCharCode(BitStream.gf_bs_read_int(bitStream, 5) + 0x60);
-
-			//but before or after compaction ?? We assume before
-			if (!packedLanguage[0] && !packedLanguage[1] && !packedLanguage[2]) {
-				packedLanguage[0] = 'u';
-				packedLanguage[1] = 'n';
-				packedLanguage[2] = 'd';
-			}
-			
-			language = packedLanguage.join("");
-			
-			reserved = data.readUnsignedShort();
-
-			data.position = 0;
+			bitStream.position = 0;
 		}
 
 		//----------------------------------------

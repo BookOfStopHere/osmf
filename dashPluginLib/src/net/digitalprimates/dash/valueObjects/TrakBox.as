@@ -1,13 +1,17 @@
 package net.digitalprimates.dash.valueObjects
 {
 	import flash.utils.ByteArray;
+	
+	import org.osmf.net.httpstreaming.flv.FLVTag;
+	import org.osmf.net.httpstreaming.flv.FLVTagAudio;
+	import org.osmf.net.httpstreaming.flv.FLVTagVideo;
 
 	/**
 	 *
 	 *
 	 * @author Nathan Weber
 	 */
-	public class TrakBox extends BoxInfo
+	public class TrakBox extends ParentBox
 	{
 		//----------------------------------------
 		//
@@ -34,62 +38,43 @@ package net.digitalprimates.dash.valueObjects
 		public function set mdia(value:MdiaBox):void {
 			_mdia = value;
 		}
-
-		//----------------------------------------
-		//
-		// Internal Methods
-		//
-		//----------------------------------------
-
-		override protected function parse():void {
-			/*
-			trak							container for an individual track or stream
-				tkhd						track header, overall information about the track
-				mdia						container for the media information in a track
-					mdhd					media header, overall information about the media
-					hdlr					handler, declares the media (handler) type
-					minf					media information container
-						vmhd				video media header, overall information (video track only)
-						dinf				data information box, container
-							dref			data reference box, declares source(s) of media data in track
-								url
-						stbl				sample table box, container for the time/space map
-							stsd			sample descriptions (codec types, initialization etc.)
-								avc1
-									avcC
-							stts			(decoding) time-to-sample
-							stsc			sample-to-chunk, partial data-offset information
-							stsz			sample sizes (framing)
-							stco			chunk offset, partial data-offset information
-			*/
-
-			var ba:ByteArray;
-			var size:int;
-			var type:String;
-			var boxData:ByteArray;
-
-			while (data.bytesAvailable > SIZE_AND_TYPE_LENGTH) {
-				ba = new ByteArray();
-				data.readBytes(ba, 0, BoxInfo.SIZE_AND_TYPE_LENGTH);
-
-				size = ba.readUnsignedInt(); // BoxInfo.FIELD_SIZE_LENGTH
-				type = ba.readUTFBytes(BoxInfo.FIELD_TYPE_LENGTH);
-
-				boxData = new ByteArray();
-				data.readBytes(boxData, 0, size - BoxInfo.SIZE_AND_TYPE_LENGTH);
-
-				switch (type) {
-					case BOX_TYPE_TKHD:
-						tkhd = new TkhdBox(size, boxData);
-						break;
-					case BOX_TYPE_MDIA:
-						mdia = new MdiaBox(size, boxData);
-						break;
+		
+		private var _configTag:FLVTag;
+		
+		/**
+		 * Returns the configuration header tag for this track. 
+		 */		
+		public function get configTag():FLVTag {
+			if (!_configTag) {
+				var hdlr:HdlrBox = mdia.hdlr;
+				
+				if (hdlr.handlerType == HdlrBox.HANDLER_TYPE_VIDEO) {
+					var videoTag:FLVTagVideo = new FLVTagVideo();
+					videoTag.codecID = FLVTagVideo.CODEC_ID_AVC;
+					videoTag.frameType = FLVTagVideo.FRAME_TYPE_KEYFRAME;
+					videoTag.avcPacketType = FLVTagVideo.AVC_PACKET_TYPE_SEQUENCE_HEADER;
+					
+					var avcC:AvccBox = mdia.minf.stbl.stsd.sampleEntries[0].avcC;
+					videoTag.data = avcC.configRecord;
+					
+					_configTag = videoTag;
+				}
+				else if (hdlr.handlerType == HdlrBox.HANDLER_TYPE_AUDIO) {
+					var mp4a:Mp4aBox = (mdia.minf.stbl.stsd.sampleEntries[0] as Mp4aBox);
+					
+					var audioTag:FLVTagAudio = new FLVTagAudio();
+					audioTag.soundFormat = FLVTagAudio.SOUND_FORMAT_AAC;
+					audioTag.soundChannels = mp4a.channelCount;
+					audioTag.soundRate = FLVTagAudio.SOUND_RATE_44K; // force to 44k | specification indicates AAC should always be set to 44k
+					audioTag.soundSize = mp4a.bitsPerSample;
+					audioTag.isAACSequenceHeader = true;
+					audioTag.data = mp4a.esds.es.decoderConfigDescriptor.decoderSpecificInfo.configData;
+					
+					_configTag = audioTag;
 				}
 			}
-
-			// reset
-			data.position = 0;
+			
+			return _configTag;
 		}
 
 		//----------------------------------------

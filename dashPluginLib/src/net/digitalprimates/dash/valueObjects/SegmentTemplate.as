@@ -46,8 +46,8 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 		
-		public var timescale:Number;
-		public var duration:Number;
+		public var timescale:Number = 0;
+		public var duration:Number = 0;
 		public var mediaURL:String;
 		public var startNumber:Number = 0;
 		public var segments:Array;

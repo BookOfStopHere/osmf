@@ -33,7 +33,7 @@ package net.digitalprimates.dash.valueObjects
 
 		override protected function parse():void {
 			configRecord = new ByteArray();
-			data.readBytes(configRecord, 0, size - BoxInfo.SIZE_AND_TYPE_LENGTH);
+			bitStream.readBytes(configRecord, 0, size - BoxInfo.SIZE_AND_TYPE_LENGTH);
 		}
 
 		//----------------------------------------

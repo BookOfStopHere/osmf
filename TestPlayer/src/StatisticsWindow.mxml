@@ -4,7 +4,7 @@
 	xmlns:s="library://ns.adobe.com/flex/spark" 
 	xmlns:mx="library://ns.adobe.com/flex/mx"
 	title="Statistics"
-	width="400" height="300">
+	width="400" height="450" xmlns:local="*">
 	
 	<fx:Script>
 		<![CDATA[
@@ -227,7 +227,10 @@
 			paddingLeft="10" paddingRight="10"/>
 	</s:layout>
 	
-	<s:Label text="Play State: {playState}"/>
+	<s:Label
+		width="100%"
+		text="Play State: {playState}"
+		maxDisplayedLines="3"/>
 	
 	<mx:HRule width="100%"/>
 	
@@ -278,5 +281,7 @@
 	</s:Group>
 	
 	<mx:HRule width="100%"/>
+	
+	<local:ReleaseNotes width="100%" height="100%"/>
 	
 </s:TitleWindow>

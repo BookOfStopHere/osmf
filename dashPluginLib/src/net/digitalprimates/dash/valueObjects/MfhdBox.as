@@ -32,11 +32,9 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			readFullBox(bitStream, this);
-
-			sequenceNumber = data.readInt();
-			
-			data.position = 0;
+			parseVersionAndFlags();
+			sequenceNumber = bitStream.readUInt32();
+			bitStream.position = 0;
 		}
 
 		//----------------------------------------

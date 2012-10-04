@@ -7,7 +7,7 @@ package net.digitalprimates.dash.valueObjects
 	 *
 	 * @author Nathan Weber
 	 */
-	public class MdiaBox extends BoxInfo
+	public class MdiaBox extends ParentBox
 	{
 		//----------------------------------------
 		//
@@ -43,64 +43,6 @@ package net.digitalprimates.dash.valueObjects
 
 		public function set minf(value:MinfBox):void {
 			_minf = value;
-		}
-
-		//----------------------------------------
-		//
-		// Internal Methods
-		//
-		//----------------------------------------
-
-		override protected function parse():void {
-			/*
-			mdia						container for the media information in a track
-				mdhd					media header, overall information about the media
-				hdlr					handler, declares the media (handler) type
-				minf					media information container
-					vmhd				video media header, overall information (video track only)
-					dinf				data information box, container
-						dref			data reference box, declares source(s) of media data in track
-							url
-					stbl				sample table box, container for the time/space map
-						stsd			sample descriptions (codec types, initialization etc.)
-							avc1
-								avcC
-						stts			(decoding) time-to-sample
-						stsc			sample-to-chunk, partial data-offset information
-						stsz			sample sizes (framing)
-						stco			chunk offset, partial data-offset information
-			*/
-
-			var ba:ByteArray;
-			var size:int;
-			var type:String;
-			var boxData:ByteArray;
-
-			while (data.bytesAvailable > SIZE_AND_TYPE_LENGTH) {
-				ba = new ByteArray();
-				data.readBytes(ba, 0, BoxInfo.SIZE_AND_TYPE_LENGTH);
-
-				size = ba.readUnsignedInt(); // BoxInfo.FIELD_SIZE_LENGTH
-				type = ba.readUTFBytes(BoxInfo.FIELD_TYPE_LENGTH);
-
-				boxData = new ByteArray();
-				data.readBytes(boxData, 0, size - BoxInfo.SIZE_AND_TYPE_LENGTH);
-
-				switch (type) {
-					case BOX_TYPE_MDHD:
-						mdhd = new MdhdBox(size, boxData);
-						break;
-					case BOX_TYPE_HDLR:
-						hdlr = new HdlrBox(size, boxData);
-						break;
-					case BOX_TYPE_MINF:
-						minf = new MinfBox(size, boxData);
-						break;
-				}
-			}
-
-			// reset
-			data.position = 0;
 		}
 
 		//----------------------------------------

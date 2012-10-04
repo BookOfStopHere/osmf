@@ -32,16 +32,16 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			readFullBox(bitStream, this);
+			parseVersionAndFlags();
 
 			if (version == 1) {
-				fragmentDuration = data.readDouble();
+				fragmentDuration = bitStream.readUInt64();
 			}
 			else {
-				fragmentDuration = data.readUnsignedInt();
+				fragmentDuration = bitStream.readUInt32();
 			}
 
-			data.position = 0;
+			bitStream.position = 0;
 		}
 
 		//----------------------------------------

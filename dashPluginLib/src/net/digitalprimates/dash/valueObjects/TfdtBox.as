@@ -34,15 +34,15 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			readFullBox(bitStream, this);
+			parseVersionAndFlags();
 
 			if (version == 1) {
-				baseMediaDecodeTime = BitStream.gf_bs_read_u64(this.bitStream);
+				baseMediaDecodeTime = bitStream.readUInt64();
 			} else {
-				baseMediaDecodeTime = data.readUnsignedInt();
+				baseMediaDecodeTime = bitStream.readUInt32();
 			}
 
-			data.position = 0;
+			bitStream.position = 0;
 		}
 
 		//----------------------------------------

@@ -1,6 +1,7 @@
 package net.digitalprimates.dash.valueObjects
 {
 	import flash.utils.ByteArray;
+	import net.digitalprimates.dash.utils.BaseDescriptorFactory;
 
 	/**
 	 *
@@ -32,8 +33,12 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			readFullBox(bitStream, this);
-			es = new ESDescriptor(data);
+			parseVersionAndFlags();
+			
+			var descriptor:Descriptor = descriptorFactory.getInstance(bitStream);
+			if (descriptor is ESDescriptor) {
+				es = (descriptor as ESDescriptor)
+			}
 		}
 
 		//----------------------------------------

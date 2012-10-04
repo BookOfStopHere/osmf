@@ -2,6 +2,9 @@ package net.digitalprimates.dash.valueObjects
 {
 	import flash.utils.ByteArray;
 
+	import net.digitalprimates.dash.utils.BaseDescriptorFactory;
+	import net.digitalprimates.dash.utils.IDescriptorFactory;
+
 	/**
 	 *
 	 *
@@ -11,42 +14,55 @@ package net.digitalprimates.dash.valueObjects
 	{
 		//----------------------------------------
 		//
+		// Variables
+		//
+		//----------------------------------------
+
+		protected var sizeOfInstance:int;
+		protected var sizeBytes:int;
+
+		//----------------------------------------
+		//
 		// Properties
 		//
 		//----------------------------------------
 
-		private var _data:ByteArray;
+		private var _data:BitStream;
 
-		public function get data():ByteArray {
+		protected function get bitStream():BitStream {
 			return _data;
 		}
 
-		public function set data(value:ByteArray):void {
-			if (data == value)
+		public function set data(value:BitStream):void {
+			if (_data == value)
 				return;
 
 			_data = value;
 			parse();
 		}
 
-		private var _id:int;
+		private var _tag:uint;
 
-		public function get id():int {
-			return _id;
+		public function get tag():uint {
+			return _tag;
 		}
 
-		public function set id(value:int):void {
-			_id = value;
+		public function set tag(value:uint):void {
+			_tag = value;
 		}
-
-		private var _size:int;
 
 		public function get size():int {
-			return _size;
+			return sizeOfInstance + 1 + sizeBytes;
 		}
 
-		public function set size(value:int):void {
-			_size = value;
+		private var _type:String;
+
+		public function get type():String {
+			return _type;
+		}
+
+		public function set type(value:String):void {
+			_type = value;
 		}
 
 		//----------------------------------------
@@ -55,10 +71,47 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 
+		private var _descriptorFactory:IDescriptorFactory;
+
+		protected function get descriptorFactory():IDescriptorFactory {
+			if (!_descriptorFactory) {
+				_descriptorFactory = new BaseDescriptorFactory();
+			}
+
+			return _descriptorFactory;
+		}
+
+		protected function parseChildrenDescriptors(objectTypeIndication:uint = 0):void {
+			var descriptor:Descriptor;
+			while (bitStream.bytesAvailable > 2) {
+				descriptor = descriptorFactory.getInstance(bitStream, objectTypeIndication);
+				setChildDescriptor(descriptor);
+			}
+		}
+
+		protected function setChildDescriptor(descriptor:Descriptor):void {
+			
+		}
+
 		protected function parse():void {
-			if (data && data.bytesAvailable > 0) {
-				id = data.readUnsignedByte();
-				size = data.readUnsignedByte();
+			if (bitStream && bitStream.bytesAvailable > 0) {
+				var i:int = 0;
+				var tmp:int = bitStream.readUInt8();
+				i++;
+				sizeOfInstance = tmp & 0x7f;
+				while (tmp >>> 7 == 1) {
+					tmp = bitStream.readUInt8();
+					i++;
+					sizeOfInstance = sizeOfInstance << 7 | tmp & 0x7f;
+				}
+				sizeBytes = i;
+
+				// We only want to continue parsing our data.
+				// Slice off the portion that we care about.
+				var localData:ByteArray = new ByteArray();
+				bitStream.readBytes(localData, 0, sizeOfInstance);
+
+				_data = new BitStream(localData);
 			}
 		}
 
@@ -68,7 +121,7 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 
-		public function Descriptor(data:ByteArray = null) {
+		public function Descriptor(data:BitStream = null) {
 			this.data = data;
 		}
 	}

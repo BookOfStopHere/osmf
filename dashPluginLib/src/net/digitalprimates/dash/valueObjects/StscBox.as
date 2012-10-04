@@ -25,16 +25,16 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			readFullBox(bitStream, this);
+			parseVersionAndFlags();
 
-			nbEntries = data.readUnsignedInt();
+			nbEntries = bitStream.readUInt32();
 			entries = [];
 			
 			for (var i:int = 0; i < nbEntries; i++) {
 				entries[i] = {};
-				entries[i].firstChunk = data.readUnsignedInt();
-				entries[i].samplesPerChunk = data.readUnsignedInt();
-				entries[i].sampleDescriptionIndex = data.readUnsignedInt();
+				entries[i].firstChunk = bitStream.readUInt32();
+				entries[i].samplesPerChunk = bitStream.readUInt32();
+				entries[i].sampleDescriptionIndex = bitStream.readUInt32();
 				entries[i].isEdited = 0;
 				entries[i].nextChunk = 0;
 				
@@ -42,7 +42,7 @@ package net.digitalprimates.dash.valueObjects
 				if (i) entries[i-1].nextChunk = entries[i].firstChunk;
 			}
 			
-			data.position = 0;
+			bitStream.position = 0;
 		}
 
 		//----------------------------------------

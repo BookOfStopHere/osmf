@@ -32,11 +32,11 @@ package net.digitalprimates.dash.valueObjects
 		//----------------------------------------
 
 		override protected function parse():void {
-			if (data && data.bytesAvailable > 0) {
+			if (bitStream && bitStream.bytesAvailable > 0) {
 				super.parse();
 
 				configData = new ByteArray();
-				data.readBytes(configData, 0, size);
+				bitStream.readBytes(configData, 0, sizeOfInstance);
 			}
 		}
 
@@ -46,7 +46,7 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 
-		public function DecoderSpecificInfo(data:ByteArray = null) {
+		public function DecoderSpecificInfo(data:BitStream = null) {
 			super(data);
 		}
 	}
