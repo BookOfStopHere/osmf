@@ -9,8 +9,6 @@ package net.digitalprimates.dash.decoders
 	import net.digitalprimates.dash.valueObjects.*;
 	
 	import org.osmf.net.httpstreaming.flv.FLVTag;
-	import org.osmf.net.httpstreaming.flv.FLVTagAudio;
-	import org.osmf.net.httpstreaming.flv.FLVTagVideo;
 
 	/**
 	 * Parses MP4 fragments.
@@ -40,6 +38,23 @@ package net.digitalprimates.dash.decoders
 			}
 			
 			return _boxFactory;
+		}
+		
+		/**
+		 * @private 
+		 * If we have multiple tracks in a single segment stream we have to wait for the entire box
+		 * to be downloaded before we can parse any of it.
+		 * The reason for this is because the tracks need to be sycned and playing them as they download
+		 * will cause them to be out of sync.
+		 */		
+		protected function get shouldProcessEntireBox():Boolean {
+			if (currentMoof && currentMoof.tracks) {
+				return (currentMoof.tracks.length > 1);
+			}
+			if (currentMoov && currentMoov.tracks) {
+				return (currentMoov.tracks.length > 1);
+			}
+			return false;
 		}
 		
 		//----------------------------------------
@@ -133,11 +148,12 @@ package net.digitalprimates.dash.decoders
 			if ((currentBox && !currentBox.ready) || bytesPending) {
 				var read:Boolean = readBoxData(currentBox, input, limit);
 				
-				if (read) {
-					Log.log("box contents read");
+				// if we aren't able to read, we have to load more data.
+				if (!read) {
+					Log.log("still waiting for box contents");
 				}
 				else {
-					Log.log("still waiting for box contents");
+					Log.log("box contents read");
 				}
 			}
 			
@@ -164,14 +180,28 @@ package net.digitalprimates.dash.decoders
 						Log.log("got a MOOF box");
 						// save this off for later, we'll need it when we build the stream fragments
 						currentMoof = currentBox as MoofBox;
+						
+						// now that we have the moof, we can write out the header tags
+						// we need both the trak and the traf
+						// the trak has the actual config tag and the traf has the decode time.
+						if (currentMoov) {
+							if (!returnByteArray) returnByteArray = new ByteArray();
+							for each (var box:TrafBox in currentMoof.tracks) {
+								var trak:TrakBox = getTrakForTraf(currentMoov, box);
+								if (trak.configTag) {
+									trak.configTag.timestamp = box.tfdt.baseMediaDecodeTime / trak.mdia.mdhd.timescale * 1000;
+									trak.configTag.write(returnByteArray);
+								}
+							}
+						}
+						
 						clearCurrentBox();
 						break;
 					
 					case BoxInfo.BOX_TYPE_MDAT:
 						Log.log("got a MDAT box");
-						
 						/*
-						The mdat box contains all of the stream frames.  This is where the magic happens.
+						The mdat box contains all of the stream samples.  This is where the magic happens.
 						We have to grab each frame's data and repackage it as FLV data.  NetStream.appendBytes()
 						only accept FLV packaged data.  Passing anything else simply won't work.
 						OSMF has some convenience classes to package the stream data into FLV format..
@@ -180,12 +210,10 @@ package net.digitalprimates.dash.decoders
 						We'll also use them below when decoding the stream frames.
 						See TrunBox for more information about how the frames are decoded.
 						*/
-						
-						// get the data in FLV format
-						// process each track in the moof
-						// we might have an audio and video track in the same moof
+						// process each track in the moof - we might have an audio and video track in the same moof
 						var mdatBox:MdatBox = (currentBox as MdatBox);
 						var mdatData:ByteArray = mdatBox.sampleData;
+						
 						for each (var traf:TrafBox in currentMoof.tracks) {
 							var flv:ByteArray = getFLVBytes(mdatData, traf);
 							
@@ -204,6 +232,7 @@ package net.digitalprimates.dash.decoders
 							currentMoof = null;
 							clearCurrentBox();
 						}
+						
 						break;
 					
 					default:
@@ -217,9 +246,10 @@ package net.digitalprimates.dash.decoders
 			// reset the position to 0, otherwise HTTPStreamMixer will fail
 			if (returnByteArray) {
 				returnByteArray.position = 0;
+				return returnByteArray;
 			}
 			
-			return returnByteArray;
+			return null;
 		}
 		
 		//----------------------------------------
@@ -252,20 +282,20 @@ package net.digitalprimates.dash.decoders
 			// however, there's a bug that will cause mdats with multiple tracks to have the second track delayed
 			// the multiple tracks should play at the same time!
 			// leave as false for now..
-			// TODO : Measure effect on performace.
-			var forced:Boolean = false; //(box.type == BoxInfo.BOX_TYPE_MDAT);
+			var forced:Boolean = !shouldProcessEntireBox && (box.type == BoxInfo.BOX_TYPE_MDAT);
 			
 			// not enough data
 			if ((input.bytesAvailable < bytesNeeded) && !forced)
 				return false;
 			
-			Log.log("getting box contents", box.type, input.bytesAvailable, bytesNeeded);
+			Log.log("getting box contents", box.type, input.bytesAvailable, bytesNeeded, limit);
 			
 			var data:ByteArray;
 			
 			bytesPending = false;
 			
 			var numBytesToRead:Number = bytesNeeded;
+			
 			if (input.bytesAvailable < bytesNeeded) {
 				numBytesToRead = input.bytesAvailable;
 				bytesPending = true;
@@ -372,8 +402,6 @@ package net.digitalprimates.dash.decoders
 						return null;
 				}
 				
-				// THIS IS WHERE WE STOPPED TALKING
-				
 				var configTag:FLVTag = trak.configTag;
 				var timescale:Number = trak.mdia.mdhd.timescale;
 				
@@ -383,11 +411,6 @@ package net.digitalprimates.dash.decoders
 				
 				// if we haven't written the headers to NetStream, do that FIRST
 				if (!trun.initialized) {
-					if (configTag) {
-						configTag.timestamp = tfdt.baseMediaDecodeTime / timescale * 1000;
-						configTag.write(flvBytes);
-					}
-					
 					trun.startSampling(tfdt.baseMediaDecodeTime, configTag);
 				}
 				

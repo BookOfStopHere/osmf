@@ -13,31 +13,29 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 		
-		public static function replacements(source:String, media:Representation, index:int = -1, time:Number = 0):String {
+		public static function mediaReplacements(source:String, media:Representation):String {
 			var newSource:String = source;
 			
 			newSource = SegmentTemplate.replaceBandwidth(newSource, media);
 			newSource = SegmentTemplate.replaceRepresentationID(newSource, media);
-			newSource = SegmentTemplate.replaceSegmentID(newSource, index);
-			newSource = SegmentTemplate.replaceTime(newSource, time);
 			
 			return newSource;
 		}
 		
 		public static function replaceBandwidth(source:String, media:Representation):String {
-			return source.replace(/\$Bandwidth\$/g, media.bitrate);
+			return source.replace("$Bandwidth$", media.bitrate);
 		}
 		
 		public static function replaceRepresentationID(source:String, media:Representation):String {
-			return source.replace(/\$RepresentationID\$/g, media.id);
+			return source.replace("$RepresentationID$", media.id);
 		}
 		
-		public static function replaceSegmentID(source:String, index:int):String {
-			return source.replace(/\$Number\$/g, index);
+		public static function replaceSegmentIndex(source:String, index:int):String {
+			return source.replace("$Number$", index);
 		}
 		
 		public static function replaceTime(source:String, time:Number):String {
-			return source.replace(/\$Time\$/g, time);
+			return source.replace("$Time$", time);
 		}
 		
 		//----------------------------------------
@@ -50,9 +48,8 @@ package net.digitalprimates.dash.valueObjects
 		public var duration:Number = 0;
 		public var mediaURL:String;
 		public var startNumber:Number = 0;
-		public var segments:Array;
+		public var segments:Vector.<Segment>;
 		public var baseURL:String;
-		public var timeline:SegmentTimeline;
 		
 		//----------------------------------------
 		//
@@ -68,7 +65,6 @@ package net.digitalprimates.dash.valueObjects
 				this.startNumber = base.startNumber;
 				this.segments = base.segments;
 				this.baseURL = base.baseURL;
-				this.timeline = base.timeline;
 			}
 		}
 	}

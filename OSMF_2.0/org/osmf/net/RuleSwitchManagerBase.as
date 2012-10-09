@@ -215,6 +215,15 @@ package org.osmf.net
 		
 		private function onRunAlgorithm(event:HTTPStreamingEvent):void
 		{
+			// NW : Don't try to switch if there's only one bitrate.
+			if (switcher)
+			{
+				if (switcher.numStreams == 1)
+				{
+					return;
+				}
+			}
+			
 			var minEmergencyBitrate:Number = Number.POSITIVE_INFINITY;
 			
 			for each (var rule:RuleBase in _emergencyRules)

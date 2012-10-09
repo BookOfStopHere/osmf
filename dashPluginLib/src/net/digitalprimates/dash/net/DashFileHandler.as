@@ -2,6 +2,7 @@ package net.digitalprimates.dash.net
 {
 	import flash.utils.ByteArray;
 	import flash.utils.IDataInput;
+	import flash.utils.getTimer;
 	
 	import net.digitalprimates.dash.decoders.DefaultDecoderFactory;
 	import net.digitalprimates.dash.decoders.IDecoder;
@@ -64,12 +65,10 @@ package net.digitalprimates.dash.net
 		}
 
 		override public function processFileSegment(input:IDataInput):ByteArray {
-			//Log.log();
 			return processDataByFormat(input, BOX_READ_LIMIT, false);
 		}
 
 		override public function endProcessFile(input:IDataInput):ByteArray {
-			//Log.log();
 			var rv:ByteArray = processDataByFormat(input, BOX_READ_LIMIT, false);
 
 			finishProcessing();
@@ -78,7 +77,6 @@ package net.digitalprimates.dash.net
 		}
 
 		override public function flushFileSegment(input:IDataInput):ByteArray {
-			//Log.log();
 			var rv:ByteArray = processDataByFormat(input || new ByteArray(), 0, true);
 
 			finishProcessing();
@@ -106,7 +104,11 @@ package net.digitalprimates.dash.net
 			if (!currentDecoder)
 				return null;
 			
-			return currentDecoder.processData(input, limit);
+			Log.log("start", getTimer());
+			var bytes:ByteArray = currentDecoder.processData(input, limit);
+			Log.log("end", getTimer());
+			
+			return bytes;
 		}
 
 		//----------------------------------------

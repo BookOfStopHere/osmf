@@ -9,15 +9,11 @@
 
 	<fx:Script>
 		<![CDATA[
-			import flash.utils.setTimeout;
-			
 			import mx.collections.ArrayList;
 			import mx.collections.IList;
-			import mx.events.FlexEvent;
 			
 			import net.digitalprimates.dash.DashPluginInfo;
 			
-			import org.osmf.media.MediaPlayer;
 			import org.osmf.media.PluginInfoResource;
 			
 			private static const ADOBE:String = "http://dash.edgesuite.net/adobe/bbb/bbb.mpd";

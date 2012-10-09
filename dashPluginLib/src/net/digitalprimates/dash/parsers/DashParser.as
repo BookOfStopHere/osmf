@@ -1,5 +1,7 @@
 package net.digitalprimates.dash.parsers
 {
+	import com.longtailvideo.adaptive.parsing.Fragment;
+	
 	import flash.events.EventDispatcher;
 	import flash.geom.Point;
 	
@@ -64,7 +66,7 @@ package net.digitalprimates.dash.parsers
 				// TODO : Assume only one period for now...
 				var period:XML = xml.internal_namespace::Period[0];
 				var items:XMLList = period..internal_namespace::AdaptationSet;
-				manifest.adaptations = parseAdaptationSets(items, manifest.baseURL);
+				manifest.adaptations = parseAdaptationSets(items, manifest.baseURL, manifest.duration);
 				
 				finishLoad();
 			}
@@ -125,7 +127,7 @@ package net.digitalprimates.dash.parsers
 		 * @param baseURL
 		 * @return 
 		 */		
-		protected function parseAdaptationSets(items:XMLList, baseURL:String):Vector.<AdaptationSet> {
+		protected function parseAdaptationSets(items:XMLList, baseURL:String, duration:Number):Vector.<AdaptationSet> {
 			var sets:Vector.<AdaptationSet> = new Vector.<AdaptationSet>();
 			var item:AdaptationSet;
 			
@@ -151,7 +153,7 @@ package net.digitalprimates.dash.parsers
 				
 				if (xml.internal_namespace::SegmentTemplate.length() > 0) {
 					var templateXML:XML = xml.internal_namespace::SegmentTemplate[0];
-					var st:SegmentTemplate = parseSegmentTemplate(templateXML);
+					var st:SegmentTemplate = parseSegmentTemplate(templateXML, duration);
 					
 					var initURL:String;
 					// get the initialization to put in each representation
@@ -159,7 +161,7 @@ package net.digitalprimates.dash.parsers
 						initURL = templateXML.@initialization;
 				}
 				
-				item.medias = parseRepresentations(xml..internal_namespace::Representation, item.baseURL, initURL, item.mimeType, st);
+				item.medias = parseRepresentations(xml..internal_namespace::Representation, item.baseURL, initURL, item.mimeType, st, duration);
 				
 				sets.push(item);
 			}
@@ -176,7 +178,7 @@ package net.digitalprimates.dash.parsers
 		 * @param baseSegmentTemplate
 		 * @return 
 		 */		
-		protected function parseRepresentations(items:XMLList, baseURL:String, initializationURL:String, baseMimeType:String, baseSegmentTemplate:SegmentTemplate):Vector.<Representation> {
+		protected function parseRepresentations(items:XMLList, baseURL:String, initializationURL:String, baseMimeType:String, baseSegmentTemplate:SegmentTemplate, duration:Number):Vector.<Representation> {
 			var sets:Vector.<Representation> = new Vector.<Representation>();
 			var item:Representation;
 			
@@ -213,18 +215,18 @@ package net.digitalprimates.dash.parsers
 						}
 					}
 					
-					var timescale:Number = Number(segmentList.@timescale);
-					var duration:Number = Number(segmentList.@duration);
+					var t:Number = Number(segmentList.@timescale);
+					var d:Number = Number(segmentList.@duration);
 					
-					item.segmentTimescale = timescale;
-					item.segmentDuration = duration;
+					item.segmentTimescale = t;
+					item.segmentDuration = d;
 					
-					item.segments = parseSegments(segmentList..internal_namespace::SegmentURL, timescale, duration);
+					item.segments = parseSegments(segmentList..internal_namespace::SegmentURL, t, d);
 				}
 				
 				if (xml.internal_namespace::SegmentTemplate.length() > 0) {
 					var templateXML:XML = xml.internal_namespace::SegmentTemplate[0];
-					item.segmentTemplate = parseSegmentTemplate(templateXML, baseSegmentTemplate);
+					item.segmentTemplate = parseSegmentTemplate(templateXML, duration, baseSegmentTemplate);
 					
 					if (templateXML.attribute('initialization').length() > 0)
 						initializationURL = templateXML.@initialization;
@@ -307,7 +309,7 @@ package net.digitalprimates.dash.parsers
 		 * @param base The template from a parent node.
 		 * @return 
 		 */		
-		protected function parseSegmentTemplate(xml:XML, base:SegmentTemplate=null):SegmentTemplate {
+		protected function parseSegmentTemplate(xml:XML, duration:Number = 0, base:SegmentTemplate=null):SegmentTemplate {
 			if (!xml)
 				return null;
 			
@@ -325,28 +327,67 @@ package net.digitalprimates.dash.parsers
 			if (xml.attribute('startNumber').length() > 0)
 				item.startNumber = xml.@startNumber;
 			
+			var frag:Segment;
+			var time:Number = 0;
+			var segments:Vector.<Segment> = new Vector.<Segment>();
+			var url:String;
+			
 			if (xml.internal_namespace::SegmentTimeline.length() > 0) {
 				var t:XML = xml.internal_namespace::SegmentTimeline[0];
-				var timeline:SegmentTimeline = new SegmentTimeline();
-				var collection:Vector.<TimelineFragment> = new Vector.<TimelineFragment>();
-				var frag:TimelineFragment;
+				var count:int = 1;
+				
 				for each (var f:XML in t..internal_namespace::S) {
-					frag = new TimelineFragment;
-					
-					if (f.attribute('t').length() > 0)
-						frag.time = f.@t;
-					
-					if (f.attribute('d').length() > 0)
-						frag.duration = f.@d;
-					
+					var repeat:int = 1;
 					if (f.attribute('r').length() > 0)
-						frag.repeat = f.@r;
+						repeat = f.@r;
 					
-					collection.push(frag);
+					for (var r:int = 0; r < repeat; r++) {
+						frag = new Segment();
+						
+						frag.timescale = item.timescale;
+						
+						if (f.attribute('t').length() > 0)
+							frag.startTime = f.@t;
+						else
+							frag.startTime = time;
+						
+						if (f.attribute('d').length() > 0)
+							frag.duration = f.@d;
+						
+						url = item.mediaURL;
+						url = SegmentTemplate.replaceSegmentIndex(url, item.startNumber + count);
+						url = SegmentTemplate.replaceTime(url, time);
+						frag.media = url;
+						
+						segments.push(frag);
+						
+						time += frag.duration;
+						count++;
+					}
 				}
-				timeline.fragments = collection;
-				item.timeline = timeline;
 			}
+			else {
+				if (item.timescale > 0 && item.duration > 0 && duration > 0) {
+					var fd:Number = item.duration / item.timescale;
+					var numFrags:int = Math.ceil(duration / fd);
+					
+					for (var i:int = 1; i <= numFrags; i++) {
+						frag = new Segment();
+						frag.timescale = item.timescale;
+						frag.duration = item.duration;
+						
+						url = item.mediaURL;
+						url = SegmentTemplate.replaceSegmentIndex(url, i);
+						url = SegmentTemplate.replaceTime(url, time);
+						frag.media = url;
+						
+						time += frag.duration;
+						segments.push(frag);
+					}
+				}
+			}
+			
+			item.segments = segments;
 			
 			return item;
 		}

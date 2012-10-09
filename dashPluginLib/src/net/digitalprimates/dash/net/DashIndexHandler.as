@@ -1,5 +1,7 @@
 package net.digitalprimates.dash.net
 {
+	import flash.utils.getTimer;
+	
 	import net.digitalprimates.dash.utils.Log;
 	import net.digitalprimates.dash.valueObjects.Representation;
 	import net.digitalprimates.dash.valueObjects.Segment;
@@ -38,7 +40,37 @@ package net.digitalprimates.dash.net
 		private var streamNames:Array = null;
 		private var streamQualityRates:Array = null;
 
-		private var duration:Number = 0;
+		private var _duration:Number = 0;
+
+		protected function get duration():Number {
+			return _duration;
+		}
+
+		protected function set duration(value:Number):void {
+			if (_duration == value)
+				return;
+			
+			_duration = value;
+			
+			if (!isNaN(_duration))
+				notifyTotalDuration(_duration);
+		}
+		
+		private var _fragmentDuration:Number = 0;
+		
+		protected function get fragmentDuration():Number {
+			return _fragmentDuration;
+		}
+		
+		protected function set fragmentDuration(value:Number):void {
+			if (_fragmentDuration == value)
+				return;
+			
+			_fragmentDuration = value;
+			
+			if (!isNaN(_fragmentDuration))
+				notifyFragmentDuration(_fragmentDuration);
+		}
 		
 		//----------------------------------------
 		//
@@ -53,7 +85,7 @@ package net.digitalprimates.dash.net
 				return;
 			}
 			
-			duration = streamIndexInfo.duration;
+			this.duration = streamIndexInfo.duration;
 
 			var streamCount:int = streamIndexInfo.streamInfos.length;
 			streamQualityRates = [];
@@ -78,7 +110,7 @@ package net.digitalprimates.dash.net
 		}
 
 		override public function processIndexData(data:*, indexContext:Object):void {
-			var quality:int = indexContext as int;
+			// TODO : Parse manifest...
 		}
 
 		override public function getFileForTime(time:Number, quality:int):HTTPStreamRequest {
@@ -86,8 +118,6 @@ package net.digitalprimates.dash.net
 			var info:DashStreamingInfo = streamIndexInfo.streamInfos[quality];
 			var media:Representation = info.media;
 			
-			notifyTotalDuration(this.duration);
-
 			fileHandler.currentMimeType = media.mimeType;
 			fileHandler.currentCodecs = media.codecs;
 			
@@ -103,10 +133,26 @@ package net.digitalprimates.dash.net
 				var index:int = -1;
 				var fragmentTime:Number;
 				
-				if (media.segmentTemplate && media.segmentTemplate.timeline) {
-					index = getIndexForTimeFromTemplate(time, media.segmentTemplate);
-					fragmentTime = getTimeForIndexFromTemplate(index, media.segmentTemplate);
-					fragmentDuration = getDurationForIndexFromTemplate(index, media.segmentTemplate);
+				if (media.segmentTemplate) {
+					if (media.segmentTemplate.timescale > 0 && media.segmentTemplate.duration > 0) {
+						fragmentDuration = (media.segmentDuration / media.segmentTimescale);
+						index = time / fragmentDuration;
+						fragmentTime = time * fragmentDuration;
+					}
+					else {
+						index = -1;
+						var ft:Number = 0;
+						var frag:Segment
+						
+						while (ft < time && index < media.segmentTemplate.segments.length) {
+							index++;
+							frag = media.segmentTemplate.segments[index];
+							ft += frag.duration;
+						}
+						
+						fragmentTime = frag.startTime;
+						fragmentDuration = frag.duration;
+					}
 				}
 				// just use the segmentDuration value to figure out the index
 				else {
@@ -127,17 +173,13 @@ package net.digitalprimates.dash.net
 					var segment:Segment = media.segments[currentSegmentIndex];
 					segmentRequest = getRequestForSegment(segment, media);
 				}
-				else if (media.segmentTemplate) {
-					var absoluteIdx:int = currentSegmentIndex + media.segmentTemplate.startNumber;
-					segmentRequest = getRequestForTemplate(absoluteIdx, media.segmentTemplate, media, fragmentTime);
-				}
 				else {
 					throw new Error("Missing segment information.");
 				}
 			}
-
+			
 			Log.log(segmentRequest.url);
-			notifyFragmentDuration(fragmentDuration);
+			this.fragmentDuration = fragmentDuration;
 			return segmentRequest;
 		}
 
@@ -145,8 +187,6 @@ package net.digitalprimates.dash.net
 			var info:DashStreamingInfo = streamIndexInfo.streamInfos[quality];
 			var media:Representation = info.media;
 			var done:Boolean = false;
-			
-			notifyTotalDuration(this.duration);
 			
 			// see if we get a request because of a quality change
 			segmentRequest = processQualityChange(quality);
@@ -166,19 +206,7 @@ package net.digitalprimates.dash.net
 				if (media.segments) {
 					var segment:Segment = media.segments[currentSegmentIndex];
 					segmentRequest = getRequestForSegment(segment, media);
-					fragmentDuration = media.segmentDuration / media.segmentTimescale;
-				}
-				else if (media.segmentTemplate) {
-					var fragmentTime:Number = -1;
-					
-					if (media.segmentTemplate && media.segmentTemplate.timeline) {
-						fragmentTime = getTimeForIndexFromTemplate(currentSegmentIndex, media.segmentTemplate);
-					}
-					
-					fragmentDuration = getDurationForIndexFromTemplate(currentSegmentIndex, media.segmentTemplate);
-					
-					var absoluteIdx:int = currentSegmentIndex + media.segmentTemplate.startNumber;
-					segmentRequest = getRequestForTemplate(absoluteIdx, media.segmentTemplate, media, fragmentTime);
+					fragmentDuration = segment.duration / segment.timescale;
 				}
 				else {
 					throw new Error("Missing segment information.");
@@ -186,7 +214,7 @@ package net.digitalprimates.dash.net
 			}
 			
 			Log.log(segmentRequest.url);
-			notifyFragmentDuration(fragmentDuration);
+			this.fragmentDuration = fragmentDuration;
 			return segmentRequest;
 		}
 		
@@ -205,117 +233,7 @@ package net.digitalprimates.dash.net
 		//----------------------------------------
 		
 		private function validateMediaDone(media:Representation):Boolean {
-			var segmentCount:int = -1;
-			if (media.segments) {
-				segmentCount = media.segments.length;
-			}
-			else if (media.segmentTemplate.timeline && media.segmentTemplate.timeline.fragments) {
-				// TODO : Move to parsing step.. Just calculate the total number of fragments there.
-				// TODO : live?
-				segmentCount = 0;
-				for (var i:int = 0; i < media.segmentTemplate.timeline.fragments.length; i++) {
-					var frag:TimelineFragment = media.segmentTemplate.timeline.fragments[i];
-					segmentCount += (1 + frag.repeat);
-				}
-			}
-			
-			if (segmentCount != -1) {
-				if (currentSegmentIndex >= segmentCount) {
-					return true;
-				}
-			}
-			
-			// TODO : What if SegmentTemplate and no SegmentTimeline?
-			return false;
-		}
-		
-		private function getIndexForTimeFromTemplate(time:Number, template:SegmentTemplate):int {
-			if (!template || !template.timeline || !template.timeline.fragments || template.timeline.fragments.length == 0)
-				throw new Error("Missing template information.");
-			
-			var timeline:Vector.<TimelineFragment> = template.timeline.fragments;
-			
-			var t:Number = timeline[0].time;
-			var count:int = 0;
-			var k:int = 0;
-			var i:int;
-			
-			while (k < timeline.length) {
-				if (timeline[k].repeat > 0) {
-					for (i = 0; i < timeline[k].repeat; i++) {
-						if ((t + timeline[k].duration) >= time) return count;
-						count++;
-						t += timeline[k].duration;
-					}
-				}
-				else {
-					if ((t + timeline[k].duration) >= time) return count;
-					count++;
-					t += timeline[k].duration;
-				}
-				k++;
-			}
-			
-			return count;
-		}
-		
-		private function getTimeForIndexFromTemplate(index:int, template:SegmentTemplate):Number {
-			if (!template || !template.timeline || !template.timeline.fragments || template.timeline.fragments.length == 0)
-				throw new Error("Missing template information.");
-			
-			// TODO : Create a map for indexes to TimelineFragments....
-			// Need some sort of map because of repeat values.
-			
-			var timeline:Vector.<TimelineFragment> = template.timeline.fragments;
-			
-			var time:Number = timeline[0].time;
-			var count:int = 0;
-			var k:int = 0;
-			var i:int;
-			
-			while (true) {
-				if (timeline[k].repeat > 0) {
-					for (i = 0; i < timeline[k].repeat; i++) {
-						count++;
-						if (count > index) return time;
-						time += timeline[k].duration;
-					}
-				}
-				else {
-					count++;
-					if (count > index) return time;
-					time += timeline[k].duration;
-				}
-				k++;
-			}
-			
-			return time;
-		}
-		
-		private function getDurationForIndexFromTemplate(index:int, template:SegmentTemplate):Number {
-			if (template.duration != 0) {
-				return template.duration / template.timescale;
-			}
-			else {
-				if (!template || !template.timeline || !template.timeline.fragments || template.timeline.fragments.length == 0)
-					throw new Error("Missing template information.");
-				
-				var timeline:Vector.<TimelineFragment> = template.timeline.fragments;
-				
-				var count:int = 0;
-				var k:int = 0;
-				
-				while (true) {
-					count += timeline[k].repeat;
-					if (count >= index)
-						return timeline[k].duration;
-					
-					count++;
-					k++;
-				}
-			}
-			
-			return NaN;
+			return (currentSegmentIndex >= media.segments.length);
 		}
 		
 		protected function processQualityChange(quality:int):HTTPStreamRequest {
@@ -327,8 +245,7 @@ package net.digitalprimates.dash.net
 				
 				if (media.initialization != null && media.initialization.length > 0) {
 					var requestURL:String = buildRequestUrl(media.initialization, media.baseURL);
-					// might have some wildcards in here to replace
-					requestURL = SegmentTemplate.replacements(requestURL, media);
+					requestURL = SegmentTemplate.mediaReplacements(requestURL, media);
 					return new HTTPStreamRequest(HTTPStreamRequestKind.DOWNLOAD, requestURL);
 				}
 			}
@@ -338,14 +255,7 @@ package net.digitalprimates.dash.net
 		
 		protected function getRequestForSegment(segment:Segment, media:Representation):HTTPStreamRequest {
 			var requestURL:String = buildRequestUrl(segment.media, media.baseURL);
-			return new HTTPStreamRequest(HTTPStreamRequestKind.DOWNLOAD, requestURL);
-		}
-		
-		protected function getRequestForTemplate(index:int, template:SegmentTemplate, media:Representation, time:Number):HTTPStreamRequest {
-			var mediaURL:String = media.segmentTemplate.mediaURL;
-			mediaURL = SegmentTemplate.replacements(mediaURL, media, index, time);
-			
-			var requestURL:String = buildRequestUrl(mediaURL, media.baseURL);
+			requestURL = SegmentTemplate.mediaReplacements(requestURL, media);
 			return new HTTPStreamRequest(HTTPStreamRequestKind.DOWNLOAD, requestURL);
 		}
 		

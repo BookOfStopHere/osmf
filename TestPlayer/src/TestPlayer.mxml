@@ -120,8 +120,6 @@
 				p.addEventListener(TimeEvent.CURRENT_TIME_CHANGE, onTimeChange);
 				p.addEventListener(TimeEvent.DURATION_CHANGE, onDurationChange);
 				
-				p.autoDynamicStreamSwitch = false;
-				
 				return p;
 			}
 			

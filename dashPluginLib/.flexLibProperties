@@ -53,6 +53,7 @@
     <classEntry path="net.digitalprimates.dash.utils.IBoxFactory"/>
     <classEntry path="net.digitalprimates.dash.utils.BaseBoxFactory"/>
     <classEntry path="net.digitalprimates.dash.valueObjects.ParentBox"/>
+    <classEntry path="net.digitalprimates.dash.IWorker"/>
   </includeClasses>
   <includeResources/>
   <namespaceManifests/>

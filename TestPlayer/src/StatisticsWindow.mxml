@@ -78,7 +78,8 @@
 				if (!_player)
 					return;
 				
-				
+				_player.removeEventListener(MediaErrorEvent.MEDIA_ERROR, onMediaError);
+				_player.removeEventListener(PlayEvent.PLAY_STATE_CHANGE, onPlayStateChange);
 			}
 			
 			protected function initPlayer():void {
@@ -247,7 +248,7 @@
 			<s:CheckBox
 				id="autoMBRCheckBox"
 				label="Auto MBR"
-				selected="true"
+				selected="false"
 				enabled="{hasMBR}"
 				change="onAutoMBRChange(event)"/>
 			

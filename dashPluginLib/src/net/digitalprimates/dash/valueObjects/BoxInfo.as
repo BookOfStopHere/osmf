@@ -185,10 +185,8 @@ package net.digitalprimates.dash.valueObjects
 		}
 
 		protected function parseChildrenBoxes():void {
-			var box:BoxInfo;
-
 			while (bitStream.bytesAvailable > SIZE_AND_TYPE_LENGTH) {
-				box = boxFactory.getInstance(bitStream, true);
+				var box:BoxInfo = boxFactory.getInstance(bitStream, true);
 				setChildBox(box);
 			}
 		}

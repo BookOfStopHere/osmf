@@ -90,6 +90,15 @@ package org.osmf.net
 			}
 		}
 		
+		public function get numStreams():int {
+			if (dsResource && dsResource.streamItems)
+			{
+				return dsResource.streamItems.length;
+			}
+			
+			return 0;
+		}
+		
 		/**
 		 * Index of the quality level currently being played
 		 * 
