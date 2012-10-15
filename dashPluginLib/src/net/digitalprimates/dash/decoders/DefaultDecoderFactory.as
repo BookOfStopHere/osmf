@@ -1,5 +1,8 @@
 package net.digitalprimates.dash.decoders
 {
+	import net.digitalprimates.dash.mp4.MP4Decoder;
+	import net.digitalprimates.dash.mp2t.MP2TDecoder;
+
 	/**
 	 * Returns the default set of decoders.
 	 * 

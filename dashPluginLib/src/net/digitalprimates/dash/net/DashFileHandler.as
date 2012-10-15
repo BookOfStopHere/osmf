@@ -2,12 +2,10 @@ package net.digitalprimates.dash.net
 {
 	import flash.utils.ByteArray;
 	import flash.utils.IDataInput;
-	import flash.utils.getTimer;
 	
 	import net.digitalprimates.dash.decoders.DefaultDecoderFactory;
 	import net.digitalprimates.dash.decoders.IDecoder;
 	import net.digitalprimates.dash.decoders.IDecoderFactory;
-	import net.digitalprimates.dash.utils.Log;
 	
 	import org.osmf.net.httpstreaming.HTTPStreamingFileHandlerBase;
 	import org.osmf.utils.OSMFSettings;
@@ -104,9 +102,7 @@ package net.digitalprimates.dash.net
 			if (!currentDecoder)
 				return null;
 			
-			Log.log("start", getTimer());
 			var bytes:ByteArray = currentDecoder.processData(input, limit);
-			Log.log("end", getTimer());
 			
 			return bytes;
 		}

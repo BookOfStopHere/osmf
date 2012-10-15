@@ -2,7 +2,6 @@ package net.digitalprimates.dash.valueObjects
 {
 	import flash.utils.ByteArray;
 	import flash.utils.IDataInput;
-	import flash.utils.IDataOutput;
 
 	/**
 	 * 

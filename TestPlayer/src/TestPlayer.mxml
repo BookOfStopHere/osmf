@@ -31,6 +31,7 @@
 			import org.osmf.media.PluginInfoResource;
 			import org.osmf.media.URLResource;
 			import org.osmf.traits.PlayState;
+			import org.osmf.utils.OSMFSettings;
 			
 			protected var autoPlay:Boolean = true;
 			

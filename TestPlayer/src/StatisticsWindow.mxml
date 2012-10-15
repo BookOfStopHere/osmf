@@ -3,13 +3,13 @@
 	xmlns:fx="http://ns.adobe.com/mxml/2009" 
 	xmlns:s="library://ns.adobe.com/flex/spark" 
 	xmlns:mx="library://ns.adobe.com/flex/mx"
+	xmlns:local="*"
+	creationComplete="init()"
 	title="Statistics"
-	width="400" height="450" xmlns:local="*">
+	width="400" height="450">
 	
 	<fx:Script>
 		<![CDATA[
-			import flash.utils.setTimeout;
-			
 			import org.osmf.events.DynamicStreamEvent;
 			import org.osmf.events.MediaElementEvent;
 			import org.osmf.events.MediaErrorEvent;
@@ -24,7 +24,6 @@
 			
 			[Bindable]
 			public var playState:String = "press play...";
-			
 			[Bindable]
 			public var hasMBR:Boolean = false;
 			[Bindable]
@@ -33,14 +32,18 @@
 			public var currentBitrateIndex:Number;
 			[Bindable]
 			public var currentBitrateValue:Number;
-			
-			private var pollNetStream:Boolean = false;
 			[Bindable]
 			public var bufferLength:Number;
 			[Bindable]
 			public var fps:Number;
 			[Bindable]
+			public var avgfps:Number;
+			[Bindable]
 			public var droppedFrames:Number;
+			
+			private var pollNetStream:Boolean = false;
+			private var frameTotal:Number = 0;
+			private var frameCount:int = 0;
 			
 			// OSMF
 			
@@ -73,6 +76,16 @@
 			}
 			
 			// INTERNAL METHODS
+			
+			private function init():void {
+				addEventListener(Event.ENTER_FRAME, onEnterFrame);
+			}
+			
+			private function onEnterFrame(event:Event):void {
+				if (pollNetStream) {
+					netStreamPoll();
+				}
+			}
 			
 			protected function clearPlayer():void {
 				if (!_player)
@@ -140,7 +153,6 @@
 					return;
 				
 				pollNetStream = true;
-				setTimeout(netStreamPoll, 1000);
 			}
 			
 			private function clearLoadTrait(trait:NetStreamLoadTrait):void {
@@ -155,13 +167,16 @@
 				if (!trait)
 					return;
 				
-				bufferLength = Math.round(trait.netStream.bufferLength);
-				fps = Math.round(trait.netStream.currentFPS);
-				droppedFrames = trait.netStream.info.droppedFrames;
+				bufferLength = trait.netStream.bufferLength | 0;
+				fps = trait.netStream.currentFPS | 0;
 				
-				if (pollNetStream) {
-					setTimeout(netStreamPoll, 1000);
+				if (fps > 0) {
+					frameCount++;
+					frameTotal += fps;
+					avgfps = (frameTotal / frameCount) | 0;
 				}
+				
+				droppedFrames = trait.netStream.info.droppedFrames;
 			}
 			
 			// OSMF HANDLERS
@@ -237,6 +252,7 @@
 	
 	<s:Label text="Buffer Length: {bufferLength}"/>
 	<s:Label text="FPS: {fps}"/>
+	<s:Label text="Average: {avgfps}"/>
 	<s:Label text="Dropped Frames: {droppedFrames}"/>
 	
 	<mx:HRule width="100%"/>
