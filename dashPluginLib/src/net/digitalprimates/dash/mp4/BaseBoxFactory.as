@@ -22,7 +22,7 @@ package net.digitalprimates.dash.mp4
 			if (input.bytesAvailable < BoxInfo.SIZE_AND_TYPE_LENGTH)
 				return null;
 			
-			const size:int = input.readUnsignedInt();
+			const size:uint = input.readUnsignedInt();
 			const type:String = input.readUTFBytes(BoxInfo.FIELD_TYPE_LENGTH);
 			
 			var box:BoxInfo;

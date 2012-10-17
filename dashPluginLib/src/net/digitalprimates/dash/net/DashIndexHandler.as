@@ -114,7 +114,6 @@ package net.digitalprimates.dash.net
 		}
 
 		override public function getFileForTime(time:Number, quality:int):HTTPStreamRequest {
-			Log.log(time);
 			var info:DashStreamingInfo = streamIndexInfo.streamInfos[quality];
 			var media:Representation = info.media;
 			
@@ -126,10 +125,8 @@ package net.digitalprimates.dash.net
 			// see if we get a request because of a quality change
 			segmentRequest = processQualityChange(quality);
 			
-			var fragmentDuration:Number = 0;
-			
-			// if not, calculate which segment to load
 			if (!segmentRequest) {
+				// if not, calculate which segment to load
 				var index:int = -1;
 				var fragmentTime:Number;
 				
@@ -140,7 +137,7 @@ package net.digitalprimates.dash.net
 						fragmentTime = time * fragmentDuration;
 					}
 					else {
-						index = -1;
+						index = 0;
 						var ft:Number = 0;
 						var frag:Segment
 						
@@ -150,11 +147,12 @@ package net.digitalprimates.dash.net
 							ft += frag.duration;
 						}
 						
+						frag = media.segmentTemplate.segments[index];
 						fragmentTime = frag.startTime;
 						fragmentDuration = frag.duration;
 					}
 				}
-				// just use the segmentDuration value to figure out the index
+					// just use the segmentDuration value to figure out the index
 				else {
 					fragmentDuration = (media.segmentDuration / media.segmentTimescale);
 					index = time / fragmentDuration;
@@ -178,8 +176,10 @@ package net.digitalprimates.dash.net
 				}
 			}
 			
-			Log.log(segmentRequest.url);
-			this.fragmentDuration = fragmentDuration;
+			CONFIG::LOGGING
+			{
+				Log.log(segmentRequest.url);
+			}
 			return segmentRequest;
 		}
 
@@ -190,8 +190,6 @@ package net.digitalprimates.dash.net
 			
 			// see if we get a request because of a quality change
 			segmentRequest = processQualityChange(quality);
-			
-			var fragmentDuration:Number = 0;
 			
 			// if not, use the segment cursor
 			if (!segmentRequest) {
@@ -213,8 +211,10 @@ package net.digitalprimates.dash.net
 				}
 			}
 			
-			Log.log(segmentRequest.url);
-			this.fragmentDuration = fragmentDuration;
+			CONFIG::LOGGING
+			{
+				Log.log(segmentRequest.url);
+			}
 			return segmentRequest;
 		}
 		
@@ -239,15 +239,20 @@ package net.digitalprimates.dash.net
 		protected function processQualityChange(quality:int):HTTPStreamRequest {
 			if (currentQuality != quality) {
 				currentQuality = quality;
-				
-				var info:DashStreamingInfo = streamIndexInfo.streamInfos[quality];
-				var media:Representation = info.media;
-				
-				if (media.initialization != null && media.initialization.length > 0) {
-					var requestURL:String = buildRequestUrl(media.initialization, media.baseURL);
-					requestURL = SegmentTemplate.mediaReplacements(requestURL, media);
-					return new HTTPStreamRequest(HTTPStreamRequestKind.DOWNLOAD, requestURL);
-				}
+				return getInitializationRequest(quality);
+			}
+			
+			return null;
+		}
+		
+		protected function getInitializationRequest(quality:int):HTTPStreamRequest {
+			var info:DashStreamingInfo = streamIndexInfo.streamInfos[quality];
+			var media:Representation = info.media;
+			
+			if (media.initialization != null && media.initialization.length > 0) {
+				var requestURL:String = buildRequestUrl(media.initialization, media.baseURL);
+				requestURL = SegmentTemplate.mediaReplacements(requestURL, media);
+				return new HTTPStreamRequest(HTTPStreamRequestKind.DOWNLOAD, requestURL);
 			}
 			
 			return null;
@@ -306,6 +311,10 @@ package net.digitalprimates.dash.net
 		}
 
 		private function notifyFragmentDuration(duration:Number):void {
+			CONFIG::LOGGING
+			{
+				Log.log(duration);
+			}
 			dispatchEvent(
 				new HTTPStreamingEvent(
 					HTTPStreamingEvent.FRAGMENT_DURATION,
@@ -319,6 +328,10 @@ package net.digitalprimates.dash.net
 		}
 		
 		private function notifyTotalDuration(duration:Number):void {
+			CONFIG::LOGGING
+			{
+				Log.log(duration);
+			}
 			var metadata:Object = new Object();
 			metadata.duration = duration;
 			var tag:FLVTagScriptDataObject = new FLVTagScriptDataObject();

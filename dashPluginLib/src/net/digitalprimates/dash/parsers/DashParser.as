@@ -356,7 +356,7 @@ package net.digitalprimates.dash.parsers
 						
 						url = item.mediaURL;
 						url = SegmentTemplate.replaceSegmentIndex(url, item.startNumber + count);
-						url = SegmentTemplate.replaceTime(url, time);
+						url = SegmentTemplate.replaceTime(url, frag.startTime);
 						frag.media = url;
 						
 						segments.push(frag);

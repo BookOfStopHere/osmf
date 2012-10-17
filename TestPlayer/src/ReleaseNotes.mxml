@@ -9,9 +9,14 @@
 		<s:VGroup width="100%" height="100%" paddingTop="10" paddingBottom="10" paddingRight="10">
 			
 			<s:Label text="Known issues" fontWeight="bold"/>
-			<s:Label text="Poor playback at higher bitrates."/>
-			<s:Label text="Playback quality degrades as time progresses when using a SegmentTimeline."/>
 			<s:Label text="Seeking doesn't work."/>
+			
+			<s:Spacer height="10"/>
+			
+			<s:Label text="v0.0.3" fontWeight="bold"/>
+			<s:Label text="Fix various playback issues."/>
+			<s:Label text="Playback up to 1080p should work at ~24 fps."/>
+			<s:Label text="Faster box parsing."/>
 			
 			<s:Spacer height="10"/>
 			

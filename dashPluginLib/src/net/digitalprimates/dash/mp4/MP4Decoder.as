@@ -12,6 +12,7 @@ package net.digitalprimates.dash.mp4
 	import net.digitalprimates.dash.mp4.boxes.TfhdBox;
 	import net.digitalprimates.dash.mp4.boxes.TrafBox;
 	import net.digitalprimates.dash.mp4.boxes.TrakBox;
+	import net.digitalprimates.dash.mp4.boxes.TrexBox;
 	import net.digitalprimates.dash.mp4.boxes.TrunBox;
 	import net.digitalprimates.dash.utils.Log;
 	
@@ -37,15 +38,9 @@ package net.digitalprimates.dash.mp4
 		private var currentMoov:MoovBox;
 		private var currentMoof:MoofBox;
 		
-		private var _boxFactory:IBoxFactory;
+		private var boxFactory:IBoxFactory;
 		
-		protected function get boxFactory():IBoxFactory {
-			if (!_boxFactory) {
-				_boxFactory = new BaseBoxFactory();
-			}
-			
-			return _boxFactory;
-		}
+		private var decoderInitialized:Boolean = false;
 		
 		/**
 		 * @private 
@@ -55,13 +50,15 @@ package net.digitalprimates.dash.mp4
 		 * will cause them to be out of sync.
 		 */		
 		protected function get shouldProcessEntireBox():Boolean {
-			if (currentMoof && currentMoof.tracks) {
+			return true;
+			
+			/*if (currentMoof && currentMoof.tracks) {
 				return (currentMoof.tracks.length > 1);
 			}
 			if (currentMoov && currentMoov.tracks) {
 				return (currentMoov.tracks.length > 1);
 			}
-			return false;
+			return false;*/
 		}
 		
 		//----------------------------------------
@@ -75,6 +72,7 @@ package net.digitalprimates.dash.mp4
 		 */		
 		public function beginProcessData():void {
 			currentBox = null;
+			decoderInitialized = false;
 		}
 		
 		/**
@@ -136,40 +134,22 @@ package net.digitalprimates.dash.mp4
 			// waiting for a box
 			if (!currentBox) {
 				currentBox = getNextBox(input, limit);
-				
-				if (currentBox != null) {
-					Log.log("parsed a box of type", currentBox.type);
-					if (currentBox.ready) {
-						Log.log("box data ready");
-					}
-					else {
-						Log.log("waiting for box contents");
-					}
-				}
-				else {
-					Log.log("could not parse a box");
-				}
 			}
 			
 			// have a box, but not the contents
 			if ((currentBox && !currentBox.ready) || bytesPending) {
-				var read:Boolean = readBoxData(currentBox, input, limit);
-				
-				// if we aren't able to read, we have to load more data.
-				if (!read) {
-					Log.log("still waiting for box contents");
-				}
-				else {
-					Log.log("box contents read");
-				}
+				readBoxData(currentBox, input, limit);
 			}
 			
 			// we have a full box, so handle it
 			if (currentBox && currentBox.ready) {
-				Log.log("trying to use box", currentBox.type);
+				CONFIG::LOGGING
+				{
+					Log.log("trying to use box", currentBox.type);
+				}
+				
 				switch (currentBox.type) {
 					case BoxInfo.BOX_TYPE_MOOV:
-						Log.log("got a MOOV box - parse header tags");
 						/*
 						The moov box will be defined in the header file.
 						We need to read out the header data and save it so that we can write it out
@@ -184,29 +164,12 @@ package net.digitalprimates.dash.mp4
 						break;
 					
 					case BoxInfo.BOX_TYPE_MOOF:
-						Log.log("got a MOOF box");
 						// save this off for later, we'll need it when we build the stream fragments
 						currentMoof = currentBox as MoofBox;
-						
-						// now that we have the moof, we can write out the header tags
-						// we need both the trak and the traf
-						// the trak has the actual config tag and the traf has the decode time.
-						if (currentMoov) {
-							if (!returnByteArray) returnByteArray = new ByteArray();
-							for each (var box:TrafBox in currentMoof.tracks) {
-								var trak:TrakBox = getTrakForTraf(currentMoov, box);
-								if (trak.configTag) {
-									trak.configTag.timestamp = box.tfdt.baseMediaDecodeTime / trak.mdia.mdhd.timescale * 1000;
-									trak.configTag.write(returnByteArray);
-								}
-							}
-						}
-						
 						clearCurrentBox();
 						break;
 					
 					case BoxInfo.BOX_TYPE_MDAT:
-						Log.log("got a MDAT box");
 						/*
 						The mdat box contains all of the stream samples.  This is where the magic happens.
 						We have to grab each frame's data and repackage it as FLV data.  NetStream.appendBytes()
@@ -221,21 +184,40 @@ package net.digitalprimates.dash.mp4
 						var mdatBox:MdatBox = (currentBox as MdatBox);
 						var mdatData:ByteArray = mdatBox.existingData;
 						
-						for each (var traf:TrafBox in currentMoof.tracks) {
-						var flv:ByteArray = getFLVBytes(mdatData, traf);
+						if (!returnByteArray) returnByteArray = new ByteArray();
 						
-						if (flv) {
-							if (!returnByteArray) returnByteArray = new ByteArray();
-							returnByteArray.writeBytes(flv);
+						if (!decoderInitialized && currentMoov) {
+							for each (var box:TrafBox in currentMoof.tracks) {
+								var trak:TrakBox = getTrakForTraf(currentMoov, box);
+								if (trak.configTag) {
+									CONFIG::LOGGING
+									{
+										Log.log("write header");
+									}
+									trak.configTag.timestamp = box.tfdt.baseMediaDecodeTime / trak.mdia.mdhd.timescale * 1000;
+									trak.configTag.write(returnByteArray);
+								}
+							}
+							decoderInitialized = true;
 						}
-					}
+						
+						for each (var traf:TrafBox in currentMoof.tracks) {
+							var flv:ByteArray = getFLVBytes(mdatData, traf);
+							
+							if (flv) {
+								returnByteArray.writeBytes(flv);
+							}
+						}
 						
 						// start over if the video fragment is done being loaded
 						// the box will contain a limited amount of data based on how
 						// much we processed this pass
 						// check to see if we've gone through the entire mdat box
 						if (processingFLVBytesFinished) {
-							Log.log("finished a video fragment");
+							CONFIG::LOGGING
+							{
+								Log.log("finished a video fragment");
+							}
 							currentMoof = null;
 							clearCurrentBox();
 						}
@@ -243,7 +225,6 @@ package net.digitalprimates.dash.mp4
 						break;
 					
 					default:
-						Log.log("got a box we don't care about", currentBox.type);
 						// this will make the process start over
 						clearCurrentBox();
 						break;
@@ -271,10 +252,15 @@ package net.digitalprimates.dash.mp4
 		
 		private function getNextBox(input:IDataInput, limit:Number = 0):BoxInfo {
 			// not enough data!
-			if (input == null || input.bytesAvailable < BoxInfo.SIZE_AND_TYPE_LENGTH)
+			if (input == null)
 				return null;
 			
 			var box:BoxInfo = boxFactory.getInstance(input);
+			
+			// wan't enough data or something!
+			if (!box)
+				return null;
+						
 			readBoxData(box, input, limit);
 			
 			return box;
@@ -295,7 +281,10 @@ package net.digitalprimates.dash.mp4
 			if ((input.bytesAvailable < bytesNeeded) && !forced)
 				return false;
 			
-			Log.log("getting box contents", box.type, input.bytesAvailable, bytesNeeded, limit);
+			CONFIG::LOGGING
+			{
+				Log.log("getting box contents", box.type, input.bytesAvailable, bytesNeeded, limit);
+			}
 			
 			var data:ByteArray;
 			
@@ -306,18 +295,15 @@ package net.digitalprimates.dash.mp4
 			if (input.bytesAvailable < bytesNeeded) {
 				numBytesToRead = input.bytesAvailable;
 				bytesPending = true;
-				Log.log("not enough bytes, reading everything in");
 			}
 			
 			if (limit > 0 && numBytesToRead > limit) {
 				numBytesToRead = limit;
 				bytesPending = true;
-				Log.log("hit byte processing limit");
 			}
 			
 			// append to the box's data if it's already been created
 			if (box.ready) {
-				Log.log("appending to existing data");
 				data = box.existingData;
 			}
 			else {
@@ -329,7 +315,8 @@ package net.digitalprimates.dash.mp4
 			
 			input.readBytes(data, data.length, numBytesToRead);
 			
-			box.data = data;
+			if (!box.existingData)
+				box.data = data;
 			
 			return true;
 		}
@@ -379,13 +366,14 @@ package net.digitalprimates.dash.mp4
 				var flvBytes:ByteArray = new ByteArray();
 				
 				// get some boxes we need
+				var trex:TrexBox = currentMoov.mvex.trex;
 				var tfdt:TfdtBox = traf.tfdt;
 				var trun:TrunBox = traf.trun;
 				var tfhd:TfhdBox = traf.tfhd;
 				
 				// without these we don't have enough information to continue
 				// if these aren't here the video is probably malformed
-				if (!tfdt || !trun || !tfhd)
+				if (!trex || !tfdt || !trun || !tfhd)
 					throw new Error("Missing video information!");
 				
 				// check to see if this track is already finished
@@ -421,17 +409,19 @@ package net.digitalprimates.dash.mp4
 					trun.startSampling(tfdt.baseMediaDecodeTime, configTag);
 				}
 				
-				Log.log("start processing tags", trun.currentSample, trun.sampleCount);
+				var defaultDuration:int = (tfhd.defSampleDuration > 0) ? tfhd.defSampleDuration : trex.defSampleDuration;
+				var defaultFlags:uint = (tfhd.defSampleFlags > 0) ? tfhd.defSampleFlags : trex.defSampleFlags;
+				
 				// check to see that we have more to process and that we have enough data to process the next tag
 				while (trun.hasNext() && trun.canReadNextTag(bytes)) {
 					// get the tag from the trun - let it do the heavy lifting - and then write it to the FLV byte array
-					var tag:FLVTag = trun.getNextTag(timescale, tfhd.defSampleDuration, tfhd.defSampleFlags, bytes);
+					var tag:FLVTag = trun.getNextTag(timescale, defaultDuration, defaultFlags, bytes);
 					tag.write(flvBytes);
 				}
-				Log.log("finish processing tags", trun.currentSample, trun.sampleCount);
 				
 				// reset this to be nice for somebody else that wants to use it
 				flvBytes.position = 0;
+				
 				return flvBytes;
 			}
 			
@@ -448,7 +438,7 @@ package net.digitalprimates.dash.mp4
 		 * Constructor. 
 		 */		
 		public function MP4Decoder() {
-			
+			boxFactory = new BaseBoxFactory();
 		}
 	}
 }

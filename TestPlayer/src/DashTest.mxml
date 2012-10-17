@@ -20,14 +20,15 @@
 			private static const MAIN_PROFILE:String = "http://download.tsi.telecom-paristech.fr/gpac/DASH_CONFORMANCE/TelecomParisTech/mp4-main-multi/mp4-main-multi-mpd-AV-NBS.mpd";
 			private static const A_TEAM:String = "http://demo.unified-streaming.com/video/ateam/ateam.ism/ateam.mpd?format=mp4&session_id=13196";
 			private static const REAL_NETWORKS:String = "http://sangho.dyndns.tv/dashgen/Segments/DASH_MP4/segsrc/Riders.3gp.mp4.mpd";
+			private static const ELEMENTAL:String = "http://www.digitalprimates.net/dash/streams/live.mpd";
 			
 			override protected function getVideoSources():IList {
 				var list:ArrayList = new ArrayList();
 
 				list.addItem( new VideoSource( "GPAC Main MBR", MAIN_PROFILE ) );
 				list.addItem( new VideoSource( "USP A-Team MBR", A_TEAM ) );
-				list.addItem( new VideoSource( "Real Networks", REAL_NETWORKS ) );
 				list.addItem( new VideoSource( "Bunny 720p", ADOBE ) );
+				list.addItem( new VideoSource( "Elemental", ELEMENTAL ) );
 				
 				return list;
 			}

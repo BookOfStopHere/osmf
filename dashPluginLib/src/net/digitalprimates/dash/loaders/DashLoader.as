@@ -256,7 +256,10 @@ package net.digitalprimates.dash.loaders
 					}
 				}
 				else {
-					Log.log("unexpected adaptation set");
+					CONFIG::LOGGING
+					{
+						Log.log("unexpected adaptation set");
+					}
 				}
 			}
 			

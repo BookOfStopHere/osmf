@@ -1,25 +1,19 @@
 package net.digitalprimates.dash.utils
 {
-	CONFIG::LOGGING
-	{
-		import flash.utils.getQualifiedClassName;
-	}		
+	import flash.utils.getQualifiedClassName;
 
 	public class Log
 	{
 		public static function log( ... args ):void {
-			CONFIG::LOGGING
-			{
-				var info:Object = getCallingInfo();
-				var message:String = info.className + " :: " + info.methodName;
-				
-				for each ( var obj:Object in args ) {
-					if ( obj != null )
-						message += " :: " + obj.toString();
-				}
-				
-				trace( message );
+			var info:Object = getCallingInfo();
+			var message:String = info.className + " :: " + info.methodName;
+			
+			for each ( var obj:Object in args ) {
+				if ( obj != null )
+					message += " :: " + obj.toString();
 			}
+			
+			trace( message );
 		}
 
 		private static function getCallingInfo():Object {

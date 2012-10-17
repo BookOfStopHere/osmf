@@ -138,7 +138,7 @@ package net.digitalprimates.dash.mp4.boxes
 				var videoTag:FLVTagVideo = new FLVTagVideo();
 				videoTag.timestamp = startTime;
 				videoTag.codecID = FLVTagVideo.CODEC_ID_AVC;
-				videoTag.frameType = ((flags & 65536) == 0) ? FLVTagVideo.FRAME_TYPE_KEYFRAME : FLVTagVideo.FRAME_TYPE_INTER;
+				videoTag.frameType = ((flags & 0x10000) == 0) ? FLVTagVideo.FRAME_TYPE_KEYFRAME : FLVTagVideo.FRAME_TYPE_INTER;
 				videoTag.avcPacketType = FLVTagVideo.AVC_PACKET_TYPE_NALU;
 				videoTag.avcCompositionTimeOffset = sampleTime;
 				
@@ -205,14 +205,15 @@ package net.digitalprimates.dash.mp4.boxes
 					p.size = bitStream.readUInt32();
 				}
 				
-				if (flags & GF_ISOM_FIRST_SAMPLE_FLAGS) {
+				if (i == 0 && hasFirstSampleFlags) {
 					p.flags = firstSampleFlags;
 				}
+				else {
+					// default
+				}
 				
-				if (!hasFirstSampleFlags) {
-					if (flags & GF_ISOM_TRUN_FLAGS) {
-						p.flags = bitStream.readUInt32();
-					}
+				if (flags & GF_ISOM_TRUN_FLAGS) {
+					p.flags = bitStream.readUInt32();
 				}
 				
 				if (flags & GF_ISOM_TRUN_CTS_OFFSET) {

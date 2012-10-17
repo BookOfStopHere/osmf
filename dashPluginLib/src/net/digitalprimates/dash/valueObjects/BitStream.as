@@ -165,95 +165,47 @@ package net.digitalprimates.dash.valueObjects
 		//
 		//----------------------------------------
 		
-		public function readUInt32BE():Number {
-			var ch1:Number = readUInt8();
-			var ch2:Number = readUInt8();
-			var ch3:Number = readUInt8();
-			var ch4:Number = readUInt8();
-			
-			return ((ch4 << 24) + (ch3 << 16) + (ch2 << 8) + (ch1 << 0));
+		public function readUInt32():uint {
+			return data.readUnsignedInt();
 		}
 		
-		public function readUInt32():Number {
-			var i:Number = data.readInt();
-			if (i < 0) {
-				i += 11<<32;
-			}
-			return i;
-		}
-		
-		public function readUInt24():int {
-			var result:int = 0;
-			result += readUInt16() << 8;
-			result += byte2int(data.readByte());
+		public function readUInt24():uint {
+			var result:uint = data.readUnsignedShort() << 8;
+			result |= data.readUnsignedByte();
 			return result;
 		}
 		
-		public function readUInt16():int {
-			var result:int = 0;
-			result += byte2int(data.readByte()) << 8;
-			result += byte2int(data.readByte());
-			return result;
+		public function readUInt16():uint {
+			return data.readUnsignedShort();
 		}
 		
-		public function readUInt16BE():int {
-			var result:int = 0;
-			result += byte2int(data.readByte());
-			result += byte2int(data.readByte()) << 8;
-			return result;
-		}
-		
-		public function readUInt8():int {
-			return byte2int(data.readByte());
-		}
-		
-		public function byte2int(b:int):int {
-			return b < 0 ? b + 256 : b;
+		public function readUInt8():uint {
+			return data.readUnsignedByte();
 		}
 		
 		public function readUInt64():Number {
-			var result:Number = 0;
-			result += readUInt32() << 32;
-			if (result < 0) {
-				throw new Error("I don't know how to deal with UInt64! long is not sufficient and I don't want to use BigInt");
-			}
-			result += readUInt32();
-			
+			var result:Number = (data.readUnsignedInt() << 32);
+			result |= data.readUnsignedInt();
 			return result;
 		}
 		
 		public function readFixedPoint1616():Number {
-			var bytes:ByteArray = new ByteArray();
-			data.readBytes(bytes, 0, 4);
-			
-			var result:Number = 0;
-			result |= ((bytes[0] << 24) & 0xFF000000);
-			result |= ((bytes[1] << 16) & 0xFF0000);
-			result |= ((bytes[2] << 8) & 0xFF00);
-			result |= ((bytes[3]) & 0xFF);
-			return result / 65536;
+			// TODO : Consider when 31st bit is set.
+			return (data.readUnsignedInt() >>> 16);
 		}
 		
 		public function readFixedPoint88():Number {
-			var bytes:ByteArray = new ByteArray();
-			data.readBytes(bytes, 0, 2);
-			
-			var result:Number = 0;
-			result |= ((bytes[0] << 8) & 0xFF00);
-			result |= ((bytes[1]) & 0xFF);
-			return result / 256;
+			return (data.readUnsignedShort() >>> 8);
 		}
 		
 		public function readIso639():String {
-			var bits:int = readUInt16();
+			var bits:int = data.readUnsignedShort();
 			
-			var result:String = "";
-			for (var i:int = 0; i < 3; i++) {
-				var c:int = (bits >> (2 - i) * 5) & 0x1f;
-				result += String.fromCharCode(c + 0x60);
-			}
+			var b1:uint = ((bits >> 10) & 0x1f) + 0x60;
+			var b2:uint = ((bits >> 5) & 0x1f) + 0x60;
+			var b3:uint = (bits & 0x1f) + 0x60;
 			
-			return result;
+			return String.fromCharCode(b1, b2, b3);
 		}
 		
 		//----------------------------------------
